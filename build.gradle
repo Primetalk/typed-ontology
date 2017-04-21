@@ -1,0 +1,230 @@
+ext {
+    aGroup = 'ru.primetalk'
+// To publish to maven central:
+// 1. change version — remove SNAPSHOT.
+// 2. put _${scalaMinorVersion} in artifact names. (already done)
+// 3. enableSigning = true
+// 4. issue at shell:
+//     gradle uploadArchives
+// 5. Login to oss sonatype https://oss.sonatype.org/index.html
+// 6. Do migration:
+//    - remove synapse-grid-examples from repository,
+//    - Close repository,
+//    - Release repository.
+// The artifacts should appear in Maven Central.
+//
+
+    aVersion = '1.4.1-SNAPSHOT'
+    enableSigning = false
+//    aVersion = '1.4.0'//'1.2.0-SNAPSHOT'
+//    enableSigning = true
+}
+apply from: 'versions.gradle'
+// Troubleshooting:
+// gradle OutOfMemoryError: PermGen space:
+// JAVAOPTS="-Xmx1024M -XX:MaxPermSize=512M"
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.4.1'
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (enableSigning && taskGraph.allTasks.any { it instanceof Sign }) {
+        // Use Java 6's console to read from the console (no good for a CI environment)
+        Console console = System.console()
+        console.printf "\n\nWe have to sign some things in this build.\n\nPlease enter your signing details.\n\n"
+
+        def id = "855C7687"//console.readLine("PGP Key Id: ")
+        def file = "/home/zhizhelev/.gnupg/secring.gpg"//console.readLine("PGP Secret Key Ring File (absolute path): ")
+        def password = console.readPassword("PGP Private Key Password: ")
+
+        allprojects { ext."signing.keyId" = id }
+        allprojects { ext."signing.secretKeyRingFile" = file }
+        allprojects { ext."signing.password" = password }
+
+        console.printf "\nThanks.\n\n"
+    }
+}
+
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.github.maiflai:gradle-scalatest:0.6-5-g9065d91"
+    }
+}
+
+allprojects {
+    apply plugin: 'idea'
+
+    repositories {
+//        mavenLocal()
+        mavenCentral()
+    }
+}
+
+
+subprojects {
+    apply plugin: 'scala'
+    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
+    apply plugin: 'eclipse'
+    apply plugin: "com.github.maiflai.scalatest"
+
+    group = aGroup
+    version = aVersion
+
+
+    sourceCompatibility = 1.6
+    targetCompatibility = 1.6
+
+    dependencies {
+        compile scalaLib
+
+        testCompile junit
+        testRuntime pegdown // it is required by scalatest gradle plugin.
+        testCompile scalaTest
+    }
+
+    // making source.jar
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    // making javadoc.jar
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    // adding source.jar and javadoc.jar to artifacts
+    artifacts {
+        archives jar
+
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    tasks.withType(ScalaCompile) {
+        scalaCompileOptions.additionalParameters = ["-feature"]
+    }
+
+
+/*  publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
+        }
+        repositories {
+            maven{ // declare properties in ~/.gradle/gradle.properties
+                url nexusRep
+                credentials {
+                    username nexusUsername
+                    password nexusPassword
+                }
+            }
+        }
+    }
+*/
+
+    configurations {
+        deployerJars
+    }
+
+    dependencies {
+        deployerJars "org.apache.maven.wagon:wagon-http:2.2"
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                configuration = configurations.deployerJars
+//                "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+//                "https://oss.sonatype.org/content/repositories/snapshots"
+                repository(url: repositoryUrl) {
+                    authentication(userName: repositoryUsername, password: repositoryPassword)
+                }
+//              repository (url: nexusRep) {
+//					authentication(userName: nexusUsername, password: nexusPassword)	// declare credentials in ~/.gradle/gradle.properties
+//				}
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+                pom.project {
+                    artifactId "${project.name}_${scalaMinorVersion}"
+                    packaging 'jar'
+                    description 'synapse-frames - a framework for type construction with meta information (see relations.scala). '+
+                            "The current version is $aVersion"
+                    url 'https://github.com/Primetalk/SynapseGrid'
+                    parent {
+                        groupId 'org.sonatype.oss'
+                        artifactId 'oss-parent'
+                        version 7
+                    }
+                    licenses {
+                        license {
+                            name 'BSD Software License, 2-clause version'
+                            url 'https://github.com/Primetalk/SynapseGrid/blob/master/LICENSE.md'
+                            distribution 'repo'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id 'zhizhelev'
+                            name 'Arseniy Zhizhelev'
+                            email 'zhizhelev@primetalk.ru'
+                        }
+                    }
+
+                    scm {
+                        url 'https://github.com/Primetalk/typed-map'
+                        connection 'scm:git:git@github.com:Primetalk/typed-map.git'
+                        developerConnection 'scm:git:git@github.com:Primetalk/typed-map.git'
+                    }
+
+                }
+            }
+        }
+    }
+    signing {
+        required { enableSigning && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.archives
+    }
+}
+
+project(':typed-ontology-metameta'){
+    dependencies {
+        compile "com.lihaoyi:sourcecode_${scalaMinorVersion}:0.1.3"
+        compile scalaReflect
+    }
+}
+
+project(':typed-ontology-meta'){
+    dependencies {
+        compile project(':typed-ontology-metameta')
+    }
+}
+
+project(':typed-ontology'){
+    dependencies {
+        compile project(':typed-ontology-meta')
+        compile project(':typed-json')
+    }
+}
+
+project(':typed-json'){
+    dependencies {
+        compile project(':typed-ontology-meta')
+        compile json4sNative
+    }
+}
+
+project(':typed-cvt-meta-json'){
+    dependencies {
+        compile project(':typed-json')
+        compile project(':typed-ontology-meta')
+    }
+}
