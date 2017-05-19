@@ -14,14 +14,15 @@ trait RunTimeTypeInformation {
   case class PropertyTypeInfo[A, B, D](propertyIdImpl: PropertyIdImpl[A, B], runTimeTypeInfo: RunTimeTypeInfo[A, B, D])
 
   case class PropertiesTypeInfo(propertyTypeInfos: Seq[PropertyTypeInfo[_, _, _]]) {
-    def map = propertyTypeInfos.map(p => p.propertyIdImpl -> p).toMap[PropertyIdImpl[_, _], PropertyTypeInfo[_, _, _]]
+    lazy val map: Map[PropertyIdImpl[_, _], PropertyTypeInfo[_, _, _]] =
+      propertyTypeInfos.map(p => p.propertyIdImpl -> p).toMap[PropertyIdImpl[_, _], PropertyTypeInfo[_, _, _]]
   }
 
   implicit def captureTypeInfo[A, B, D](propertyIdImpl: PropertyIdImpl[A, B])(implicit rt: RunTimeTypeInfo[A, B, D]): PropertyTypeInfo[A, B, D] =
     PropertyTypeInfo[A, B, D](propertyIdImpl, rt)
 
-  implicit class PropertyIdImplOps[A, B](propertyIdImpl: PropertyIdImpl[A, B]) {
-    def captureTypeInfo[D](implicit rt: RunTimeTypeInfo[A, B, D]): PropertyTypeInfo[A, B, D] =
+  implicit class PropertyIdImplOps[A, B, D](propertyIdImpl: PropertyIdImpl[A, B])(implicit typeMapping: TypeMapping[B,D]) {
+    def captureTypeInfo(implicit rt: RunTimeTypeInfo[A, B, D]): PropertyTypeInfo[A, B, D] =
       PropertyTypeInfo[A, B, D](propertyIdImpl, rt)
   }
 

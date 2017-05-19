@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology
 
 import ru.primetalk.typed.ontology.metameta.SimplePropertiesMeta.PropertyId
-import ru.primetalk.typed.ontology.metameta.{AnyTypeMappings, PropertyIdTypeClass, Record, RecordRepresentation, RecordTypeClass, SchemaBuilder, SimplePropertiesMeta}
+import ru.primetalk.typed.ontology.metameta.{AnyTypeMappings, PropertyIdTypeClass, Record, RecordRepresentation, RecordTypeClass, Schema, SimplePropertiesMeta}
 
 import scala.language.{higherKinds, implicitConversions}
 
@@ -16,7 +16,7 @@ package object tmap extends RecordRepresentation {
 
   type RecordImpl[A] = TypedMap[A]
 
-  case class TypedMap[A](map: Map[PropertyId[_,_], _])
+  case class TypedMap[A](map: Map[PropertyId[Record[A],_], _])
 
   /** This companion object defines implicits for TypedMap.*/
   object TypedMap extends TypedMapRecordTypeClassInstance.RecordSyntax
@@ -69,19 +69,19 @@ package object tmap extends RecordRepresentation {
         inst.propertyIdOps[A,B](propertyId)
     }
 
-    class SchemaBuilderOps[A](schemaBuilder: SchemaBuilder[A]) extends RecordSchemaBuilderOps[A] {
+    class SchemaBuilderOps[A](schemaBuilder: Schema[A]) extends RecordSchemaBuilderOps[A] {
       def empty: RecordImpl[A] = TypedMap[A](Map())
       def record(propValueList: PropertyValue[A, _, _]*): RecordImpl[A] =
         TypedMap[A](
           propValueList.collect{
             case PropertyValue(key, Some(value), _, _) =>
-              (key.asInstanceOf[PropertyId[A,_]], // recovering type information from GADT skolem. No runtime
+              (key.asInstanceOf[PropertyId[Record[A],_]], // recovering type information from GADT skolem. No runtime
                 value)
           }.toMap)
 
     }
 
-    def schemaBuilderOps[A](schemaBuilder: SchemaBuilder[A]): RecordSchemaBuilderOps[A] =
+    def schemaBuilderOps[A](schemaBuilder: Schema[A]): RecordSchemaBuilderOps[A] =
       new SchemaBuilderOps[A](schemaBuilder)
 
     val syntax = new RecordSyntax with PropertyIdSyntax with PropertyHelperSyntax with RecordTypeMappings {

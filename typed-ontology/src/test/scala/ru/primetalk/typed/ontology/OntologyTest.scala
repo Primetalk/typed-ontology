@@ -57,6 +57,7 @@ class OntologyTest extends FunSuite {
   test("Test data with another data representation"){
     import json.JsonConverters._
     import json.JObjectRecord._
+    import json.JObjectRecordTypeClassInstance
 
 
     def alice = person.record(
@@ -67,8 +68,8 @@ class OntologyTest extends FunSuite {
       )
     )
     val alice1 = alice
-    assertResult(Some("Alice"))(alice1.get(person.name))
-    assertResult("12345")(alice1(person.address).apply(address.postalIndex))
+    assertResult(Some("Alice"))(JObjectRecordTypeClassInstance(alice1).get(person.name))
+    assertResult("12345")(toRecordWrapper(toRecordWrapper(alice1).apply(person.address)).apply(address.postalIndex))
 
   }
 }

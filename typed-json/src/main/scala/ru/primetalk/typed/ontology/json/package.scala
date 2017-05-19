@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology
 
 import org.json4s.{JField, JObject, JValue}
-import ru.primetalk.typed.ontology.metameta.{AnyTypeMappings, PropertyIdTypeClass, Record, RecordRepresentation, RecordTypeClass, SchemaBuilder, SimplePropertiesMeta}
+import ru.primetalk.typed.ontology.metameta.{AnyTypeMappings, PropertyIdTypeClass, Record, RecordRepresentation, RecordTypeClass, Schema, SimplePropertiesMeta}
 import ru.primetalk.typed.ontology.metameta.SimplePropertiesMeta.PropertyId
 
 import scala.language.{higherKinds, implicitConversions}
@@ -18,14 +18,15 @@ package object json extends RecordRepresentation {
   implicit val recordSupport: RecordTypeClass[RecordImpl, meta.PropertyIdImpl] =
     JObjectRecordTypeClassInstance
 
-  type RecordImpl[A] = JObjectRecord[A]
+  type RecordImpl[A] = JObject
+  type JObjectRecord[A] = JObject
 
-  trait JsonConverter[B] {
-    def toJson(value: B): JValue
-    def fromJson(jvalue: JValue): B
+  trait JsonConverter[D] {
+    def toJson(value: D): JValue
+    def fromJson(jvalue: JValue): D
   }
 
-  case class JObjectRecord[A](jobject: JObject)
+//  case class JObjectRecord[A](jobject: JObject)
 
   object JObjectRecord extends JObjectRecordTypeClassInstance.Syntax {
 
@@ -37,44 +38,42 @@ package object json extends RecordRepresentation {
     type PropertyHelperImpl[A, B, D] = JsonConverter[D]
     class RecordWrapperImpl[A](val record: JObjectRecord[A]) extends RecordWrapper[A] {
       override def apply[B, D](key: Key[B])(implicit bd: metameta.TypeMapping[B, D], helper: PropertyHelperImpl[A, B, D]): D =
-        record.jobject.obj.collect{
+        record.obj.collect{
           case (key.name, value) => helper.fromJson(value)
         }.
-          head.
-          asInstanceOf[D]
+          head
 
       override def get[B, D](key: Key[B])(implicit bd: metameta.TypeMapping[B, D], helper: PropertyHelperImpl[A, B, D]): Option[D] =
-        record.jobject.obj.collect{
+        record.obj.collect{
           case (key.name, value) => helper.fromJson(value)
         }.
-          headOption.
-          asInstanceOf[Option[D]]
+          headOption
 
       override def updated[B, D](key: Key[B], value: D)(implicit bd: metameta.TypeMapping[B, D], helper: PropertyHelperImpl[A, B, D]): JObjectRecord[A] =
-        JObjectRecord(JObject((key.name, helper.toJson(value.asInstanceOf[D])) ::
-          record.jobject.obj.filterNot(_._1 == key.name)))
+        JObject((key.name, helper.toJson(value.asInstanceOf[D])) ::
+          record.obj.filterNot(_._1 == key.name))
 
       override def remove[B, D](key: Key[B])(implicit bd: metameta.TypeMapping[B, D], helper: PropertyHelperImpl[A, B, D]): JObjectRecord[A] =
-        JObjectRecord(JObject(record.jobject.obj.filterNot(_._1 == key.name)))
+        JObject(record.obj.filterNot(_._1 == key.name))
     }
     override def apply[A](record: JObjectRecord[A]): RecordWrapper[A] =
       new RecordWrapperImpl[A](record)
 
-    class SchemaBuilderOps[A](schemaBuilder: SchemaBuilder[A]) extends RecordSchemaBuilderOps[A] {
-      def empty: JObjectRecord[A] = JObjectRecord[A](JObject())
+    class SchemaBuilderOps[A](schemaBuilder: Schema[A]) extends RecordSchemaBuilderOps[A] {
+      def empty: JObjectRecord[A] = JObject()
       def record(propValueList: PropertyValue[A, _, _]*): JObjectRecord[A] =
-        JObjectRecord(JObject(
+        JObject(
           propValueList.collect{
             case PropertyValue(key, Some(value), _, _, jsonConverter) =>
               (key.asInstanceOf[PropertyId[A,_]].name, jsonConverter.toJson(value)):JField
           }.toList
-        ))
+        )
 
     }
 
-    def schemaBuilderOps[A](schemaBuilder: SchemaBuilder[A]): RecordSchemaBuilderOps[A] = new SchemaBuilderOps[A](schemaBuilder)
+    def schemaBuilderOps[A](schemaBuilder: Schema[A]): RecordSchemaBuilderOps[A] = new SchemaBuilderOps[A](schemaBuilder)
 
-    trait Syntax extends RecordSyntax with PropertyIdSyntax with RecordTypeMappings
+    trait Syntax extends RecordSyntax with PropertyIdSyntax with RecordTypeMappings with RecordWrapperSyntax
     val syntax = new Syntax {
 
     }
@@ -104,7 +103,8 @@ package object json extends RecordRepresentation {
 
   trait RecordTypeMappings extends AnyTypeMappings {
     implicit def mapRecordToJObjectRecord[A]: metameta.TypeMapping[Record[A], JObjectRecord[A]] =
-      JObjectRecord.mapRecordToJObjectRecord
+      metameta.typeMapping[Record[A], JObjectRecord[A]]
+//      JObjectRecord.mapRecordToJObjectRecord
   }
 
 }

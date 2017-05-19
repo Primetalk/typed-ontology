@@ -14,10 +14,10 @@ object JsonConverters {
   }
 
   implicit def jObjectRecordConverter[A] = new JsonConverter[JObjectRecord[A]] {
-    override def toJson(value: JObjectRecord[A]): JValue = value.jobject
+    override def toJson(value: JObjectRecord[A]): JValue = value
 
     override def fromJson(jvalue: JValue): JObjectRecord[A] = jvalue match {
-      case o:JsonAST.JObject => JObjectRecord[A](o)
+      case o:JsonAST.JObject => o
       case _ => throw new IllegalArgumentException(s"Cannot convert $jvalue to String")
     }
   }

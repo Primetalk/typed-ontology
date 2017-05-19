@@ -37,4 +37,4 @@ To keep more property values we may have a collection of pairs, or use typed-map
 
 Separation of data structure (schema) from actual data storage allows us to easily use 
 alternative data representations. For example, we may represent our data directly
-as json (see `typed-ontology-json` subproject)
+as json (see `typed-ontology-json` subproject).

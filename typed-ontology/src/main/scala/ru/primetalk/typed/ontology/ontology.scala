@@ -1,7 +1,8 @@
 package ru.primetalk.typed.ontology
 
-import ru.primetalk.typed.ontology.metameta.{SchemaBuilder, MetaSeq, Record}
+import ru.primetalk.typed.ontology.metameta.{MetaSeq, Record, Schema, SimplePropertiesMeta}
 import ru.primetalk.typed.ontology.metameta.SimplePropertiesMeta.property
+import scala.language.existentials
 
 /**
   * This object contains phantom types and properties for the domain model.
@@ -37,34 +38,34 @@ object ontology {
 
 
 
-  object person extends SchemaBuilder[Person] {
+  object person extends Schema[Person] {
     val name = property[String]
     val address = property[Record[Address]]
     val dob = property[LocalDate]
   }
 
-  object address extends SchemaBuilder[Address] {
+  object address extends Schema[Address] {
     val postalIndex = property[String]
     val street = property[String]
   }
 
-  object product extends SchemaBuilder[Product] {
+  object product extends Schema[Product] {
     val id = property[String]
     val description = property[String]
   }
 
-  object orderItem extends SchemaBuilder[OrderItem] {
+  object orderItem extends Schema[OrderItem] {
     val product = property[Record[Product]]
     val quantity = property[Quantity]
   }
 
-  object order extends SchemaBuilder[Order] {
+  object order extends Schema[Order] {
     val id = property[String]
     val items = property[MetaSeq[Product]]
   }
 
   /** Captured run time type information. */
-  val rtti = {
+  val rtti: SimplePropertiesMeta.TypeTagRtti.PropertiesTypeInfo = {
     import ru.primetalk.typed.ontology.metameta.SimplePropertiesMeta.TypeTagRtti._
     import ru.primetalk.typed.ontology.tmap.TypedMap._
     import scala.reflect.runtime.universe.TypeTag
@@ -83,4 +84,21 @@ object ontology {
       order.items.captureTypeInfo
     )
   }
+
+  sealed trait DomainEntitySchema[T <: DomainEntity] extends Schema[T] {
+    val id          = property[String]
+  }
+  sealed trait PersonSchema[T <: Person] extends Schema[T] {
+    val name        = property[String]
+    val address     = property[Record[Address]]
+    val dob         = property[LocalDate]
+  }
+
+  object person2 extends Schema[Person] with PersonSchema[Person] with DomainEntitySchema[Person]
+
+  sealed trait AddressSchema[T <: Address] extends Schema[T] with DomainEntitySchema[T] {
+    val postalIndex = property[String]
+    val street      = property[String]
+  }
+  object address2 extends Schema[Address] with AddressSchema[Address] with DomainEntitySchema[Address]
 }

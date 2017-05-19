@@ -9,7 +9,7 @@ import scala.language.{higherKinds, implicitConversions}
   */
 package object metameta extends TypeMappings {
   /** Phantom type that represents a record. */
-  abstract final class Record[A]
+  abstract final class Record[+A]
 
   /** Phantom type that represents a collection of elements of type A. */
   abstract final class MetaSeq[+A]
@@ -51,12 +51,20 @@ package object metameta extends TypeMappings {
 
     val syntax: RecordSyntax
 
-    def schemaBuilderOps[A](schemaBuilder: SchemaBuilder[A]): RecordSchemaBuilderOps[A]
+    def schemaBuilderOps[A](schemaBuilder: Schema[A]): RecordSchemaBuilderOps[A]
 
     trait RecordSyntax {
 
-      implicit def schemaBuilderOps[A](schemaBuilder: SchemaBuilder[A]): RecordSchemaBuilderOps[A] =
+      implicit def schemaBuilderOps[A](schemaBuilder: Schema[A]): RecordSchemaBuilderOps[A] =
         inst.schemaBuilderOps(schemaBuilder)
+
+    }
+
+    trait RecordWrapperSyntax {
+
+      implicit def toRecordWrapper[A](record: RecordImpl[A])(implicit r: RecordTypeClass[RecordImpl, PropertyIdImpl]): r.RecordWrapper[A] = {
+        r(record)
+      }
 
     }
 
@@ -65,30 +73,17 @@ package object metameta extends TypeMappings {
   implicit def toRecordWrapper[RecordImpl[_], PropertyIdImpl[-_,_], A](record: RecordImpl[A])(implicit r: RecordTypeClass[RecordImpl, PropertyIdImpl]): r.RecordWrapper[A] = {
     r(record)
   }
-//  implicit class RecordOps[RecordImpl[_], PropertyIdImpl[-_,_], A](record: RecordImpl[A])(implicit val r: RecordTypeClass[RecordImpl, PropertyIdImpl]){
-//
-//    val wrapper: r.RecordWrapper[A] = r.apply(record)
-//
-//    def updated[B,D](key: wrapper.Key[B], value: D)(implicit bd: TypeMapping[B, D], helper: r.PropertyHelper[A,B]): RecordImpl[A] =
-//      wrapper.updated(key, value)
-//
-//    def get[B,D](key: wrapper.Key[B])(implicit bd: TypeMapping[B, D], helper: r.PropertyHelper[A,B]): Option[D] =
-//      wrapper.get(key)
-//
-//    def apply[B,D](key: wrapper.Key[B])(implicit bd: TypeMapping[B, D], helper: r.PropertyHelper[A,B]): D =
-//      wrapper.apply(key)
-//  }
 
   /** This mechanism is used to get the type of surrounding Schema in `property`.
     *
-    * Inside [[SchemaBuilder]] we define single instance [[SchemaBuilder.ThisSchemaRecordTypeId]]
+    * Inside [[Schema]] we define single instance [[Schema.ThisSchemaRecordTypeId]]
     * of this trait. And that instance binds RecordType with actual type for which we define schema.
     */
   sealed trait RecordTypeId {
     type RecordType
   }
 
-  trait SchemaBuilder[A] {
+  trait Schema[A] {
 
     implicit object ThisSchemaRecordTypeId extends RecordTypeId {
       type RecordType = A
@@ -102,19 +97,6 @@ package object metameta extends TypeMappings {
     type PropertyIdImpl[-A, B]
 
     implicit def propertyIdTypeClassInstance: PropertyIdTypeClass[PropertyIdImpl]
-    /** Uses TypeTag to capture type information. */
-    object TypeTagRtti extends RunTimeTypeInformation {
-
-      import scala.reflect.runtime.universe.TypeTag
-
-      override type RunTimeTypeInfo[A,B,D] = TypeTag[B]
-
-      override type PropertyIdImpl[-A,B] = m.PropertyIdImpl[A,B]
-
-      implicit def rt[A,B,D](implicit tt: TypeTag[B], tm: TypeMapping[B,D]): RunTimeTypeInfo[A,B,D] = tt
-
-    }
-
   }
 
 
