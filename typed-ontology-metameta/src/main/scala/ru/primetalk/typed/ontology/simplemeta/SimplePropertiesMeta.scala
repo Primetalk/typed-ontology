@@ -38,7 +38,7 @@ def fieldsImpl[R](expr: Expr[Seq[RecordProperty[Record[R]]]],
   expr match
     case Varargs(Seq())  => schemaExpr
     case Varargs(Seq(a, as*))  => 
-      fieldsImpl(Varargs(as), '{ $schemaExpr.prepend($a) })
+      '{ ${fieldsImpl(Varargs(as), schemaExpr)}.prepend($a) }
 
 /** 
   * Schema of properties for record R.

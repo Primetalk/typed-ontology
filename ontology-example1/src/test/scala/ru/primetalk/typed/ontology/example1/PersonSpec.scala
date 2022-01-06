@@ -12,8 +12,8 @@ class PersonSpec:
     val name = property[String]("name")
     val age = property[Int]("age")// : SimplePropertyId[Record[Person], Int]
     val title = property[String]("title")
-    val baseSchema = //name ##: (age ##: emptySchema)
-      RecordSchema.empty[Person].prepend(age).prepend(name)
+    val baseSchema = fields(name, age)
+      // RecordSchema.empty[Person].prepend(age).prepend(name)// name #: fields(name, age)
   
   @Test def schemaTest =
     println(personProps.baseSchema)
