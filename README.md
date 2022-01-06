@@ -1,16 +1,24 @@
 Typed ontology
 ==============
 
-Typed ontology is a typed domain model with emphasis on the properties rather than data storage.
+Typed ontology is a principled approach to model various domains with emphasis on the properties rather than data storage.
+
+We work with the following abstraction layers:
+- application - actual code that work with data;
+- schema - part of application that describes the data structure, object/properties//table/columns//entities/attributes, relations between entities.
+- meta - part of application, that specifies actual instruments that
+will be used in schema definition - methods for defining entities, methods for dealing with types, methods for defining attributes and relations; There is also `simple-meta` that shows an example of how to define properties that are identified by names.
+- meta-meta - part of typed-ontology library (which could be customized), that provides foundation for `meta`. Mostly - type classes and macroses 
+to facilitate meta definition.
+
+## Primer
 
 Have a look:
 
-    object person extends SchemaBuilder[Person] {
+    object person extends SchemaBuilder[Person]:
       val name: PropertyId[Record[Person], String] = property[String]
       val address = property[Record[Address]]
       val dob = property[LocalDate]
-    }
-    
 
 These instances are about some properties of a `Record` that might contain some information about 
 an abstract "`Person`" (phantom type). From this definition we can say that `Person` is some type
@@ -38,3 +46,23 @@ To keep more property values we may have a collection of pairs, or use typed-map
 Separation of data structure (schema) from actual data storage allows us to easily use 
 alternative data representations. For example, we may represent our data directly
 as json (see `typed-ontology-json` subproject).
+
+## Applications
+
+### Missing/Partial/errorneous data representation
+
+Sometimes we have to deal with data that does not fit strict schema. For instance, some fields might 
+be missing, or there could have been an error during parsing, or we simply don't have information for those fields yet.
+
+### Event representation
+
+Sometimes we want to derive new generic entities for existing entities. For instance, 
+we might want to work with events (created/updated/deleted) for some entities.
+And we'd rather not repeat our definition of event for all entities. 
+In `updated` event we might only keep information about the fields that were actually changed.
+
+### Form conversion
+
+We may have the same information represented in different formats. 
+And we'd rather keep core schema definition in a central place.
+We should be able to represent conversion mapping using individual format definitions.
