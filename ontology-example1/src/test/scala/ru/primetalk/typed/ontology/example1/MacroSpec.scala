@@ -27,3 +27,20 @@ class MacroSpec:
   @Test def macro2Test =
     assert(sum(1L,2L) == 3)
 
+  type IndexOfTypeInTupleAux[T<:Tuple, A, N <: Int] <: Int = T match
+    case EmptyTuple => Nothing
+    case A *: t => N
+    case _ *: t => IndexOfTypeInTupleAux[t, A, S[N]]
+
+  type IndexOfTypeInTuple[T<:Tuple, A] = IndexOfTypeInTupleAux[T, A, 0]
+
+  @Test def typeTest =
+    type Example = (Int, String, Boolean)
+    val example = (1, "", true)
+    val inti: IndexOfTypeInTuple[Example, Int] = 0
+    val stri: IndexOfTypeInTuple[Example, String] = 1
+
+    val s: String = example(constValue[IndexOfTypeInTuple[Example, String]])
+    assert(s == "")
+    val b: Boolean = example(constValue[IndexOfTypeInTuple[Example, Boolean]])
+    assert(b)
