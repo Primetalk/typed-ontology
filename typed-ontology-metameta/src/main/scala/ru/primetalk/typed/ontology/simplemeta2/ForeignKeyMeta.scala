@@ -24,7 +24,6 @@ case class JointSchema[S1 <: RecordSchema,
   ](schema1: S1, schema2: S2)(val joinSchema: RecordSchema.Concat[S1, S2]):
   transparent inline def concatValues(inline d1: schema1.Values, inline d2: schema2.Values): joinSchema.Values =
     (d1 ++ d2).asInstanceOf[joinSchema.Values]
-    
 
   transparent inline def leftInnerJoin[FK <: ForeignKeyId0](inline fk: FK)(data1: List[schema1.Values], data2: List[schema2.Values]): List[joinSchema.Values] = 
     for

@@ -11,6 +11,7 @@ import scala.quoted.*
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int.S
 import scala.compiletime.constValue
+import scala.compiletime.constValueTuple
 
 /** 
   * Schema of properties for record R.
@@ -23,8 +24,6 @@ sealed trait RecordSchema:
   type Rec = Record[R]
   type ParentSchemaOrNothing <: RecordSchema { type R <: self.R }
   type Properties  <: Tuple
-  type IndexOfProp[P <: RecordProperty0] = 
-    RecordSchema.IndexOfTypeInTuple[Properties, P]
 
   type PropertySet = Tuple.Union[Properties]
   type Values      = Tuple.Map[Properties, RecordProperty0.PropertyValueType]
@@ -45,8 +44,21 @@ sealed trait RecordSchema:
   def isEmpty: Boolean
   def values(v: Values): Values = v
 
-  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](inline p2: P2): IndexOfProp[p2.type]
+  type IndexOfProp[P <: RecordProperty0] = 
+    RecordSchema.IndexOfTypeInTuple[Properties, P]
+
+  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: RecordProperty0](inline p2: P2): IndexOfProp[p2.type]
   
+  type IndicesOfProps[S2<: RecordSchema] <: Tuple =
+    S2 match
+      case EmptySchema => EmptyTuple
+      case SchemaCons[p, s] => 
+        IndexOfProp[p] *: 
+          IndicesOfProps[s]
+
+  transparent inline def indicesOfProps[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline s2: S2): IndicesOfProps[S2] = 
+    constValueTuple[IndicesOfProps[S2]]
+
   transparent inline def concat[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
     inline this match
       case _: EmptySchema => 
@@ -54,6 +66,12 @@ sealed trait RecordSchema:
       case sc: SchemaCons[p, s] => 
         (sc.schema.concat(schema2).prepend(sc.p))
 
+  // transparent inline def projection[S <: RecordSchema](inline schema2: S): Values => schema2.Values = 
+  //   inline schema2 match
+  //     case EmptySchema => 
+
+  transparent inline def concatValues[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2): (Values, schema2.Values) => RecordSchema.Concat[This, S2] = 
+    ???
 
 type EmptySchema = EmptySchema.type
 
@@ -77,9 +95,8 @@ case object EmptySchema extends RecordSchema:
 
   def unapply(e: EmptySchema): true = true
 
-  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](inline p2: P2): IndexOfProp[p2.type] = 
+  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: RecordProperty0](inline p2: P2): IndexOfProp[p2.type] =
     RecordSchema.indexOfProp(this, p2)
-
 
 final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schema: S) extends RecordSchema:
   import RecordSchema._
@@ -100,9 +117,9 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 
   def unapply[This >: this.type <: SchemaCons[P, S]]: Unapply[This] =
     Some((p, schema))
-  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](inline p2: P2): IndexOfProp[p2.type] = 
+  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: RecordProperty0](inline p2: P2): IndexOfProp[p2.type] =
     RecordSchema.indexOfProp(this, p2)
-    // 0.asInstanceOf[IndexOfProp[This, p2.type, 0]]//constValue[IndexOfProp[This, p2.type, 0]]
+  //   // 0.asInstanceOf[IndexOfProp[This, p2.type, 0]]//constValue[IndexOfProp[This, p2.type, 0]]
 
 object RecordSchema:
   type IndexOfTypeInTupleAux[T<:Tuple, A, N <: Int] <: Int = T match
@@ -130,9 +147,11 @@ object RecordSchema:
     case SchemaCons[P, s] => P
     case SchemaCons[_, s] => PropByProp[s, P]
 
-  
-  transparent inline def indexOfProp[X <: RecordSchema, P <: RecordProperty0](inline schema: X, inline property: P): schema.IndexOfProp[P] = 
+  transparent inline def indexOfProp[S1 <: RecordSchema, P <: RecordProperty0](inline schema: S1, inline property: P): schema.IndexOfProp[P] = 
     constValue[schema.IndexOfProp[P]]
+
+  transparent inline def indicesOfProps[S1 <: RecordSchema, S2 <: RecordSchema](inline s1: S1, inline s2: S2): s1.IndicesOfProps[S2] = 
+    constValueTuple[s1.IndicesOfProps[S2]]
 
   /** Type of the concatenation of two schemas. */
   type Concat[X <: RecordSchema, Y <: RecordSchema] <: RecordSchema = 
@@ -188,7 +207,6 @@ trait SchemaBuilder extends RecordSchemaBuilderBase:
     
   transparent inline def traitExpr(inline a: Any): Any = 
     ${traitExprImpl('a)}
-    
 
 def fieldsImpl[S <: RecordSchema](
   propertyList: Expr[Seq[RecordProperty0]], 
@@ -205,6 +223,23 @@ def fieldsImpl[S <: RecordSchema](
 
 class RecordSchemaBuilder[R] extends PropertiesBuilder with ForeignKeyBuilder with SchemaBuilder:
   type RecordType = R
+
+abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder with SchemaBuilder:
+  type RecordType = this.type
+
+  protected abstract class column[T: ClassTag] extends SimplePropertyId[RecordType, T]("", summon):
+    override val name = this.getClass.getSimpleName.replace("$", "")
+
+  type TableSchema <: RecordSchema
+  val tableSchema: TableSchema
+  type Row = tableSchema.Values
+
+  transparent inline def relation0(inline values: List[Row]) = 
+    new Relation0 {
+      type Schema = TableSchema
+      val schema = tableSchema
+      val values = values
+    }
 
 def tupleToSchemaImpl[T<:Tuple](t: Expr[T], ev: Expr[Tuple.IsMappedBy[RecordProperty][T]])(using Quotes): Expr[RecordSchema] = 
   t match 

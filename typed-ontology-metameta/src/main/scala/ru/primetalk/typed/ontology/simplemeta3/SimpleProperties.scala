@@ -17,9 +17,10 @@ sealed trait RecordProperty[A] extends RecordProperty0:
   * Contains unique name (within the type) and type of the value.
   * Might contain other metainformation about property, like Schema.
   */
-abstract class SimplePropertyId[A,B](val name: String, val tpe: ClassTag[B]) extends RecordProperty[A]:
+abstract class SimplePropertyId[A,B](name1: String, val tpe: ClassTag[B]) extends RecordProperty[A]:
   type P = B
 
+  val name: String = name1
   def tpeSimpleName = 
     tpe.runtimeClass.getSimpleName
 

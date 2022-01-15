@@ -46,10 +46,11 @@ class OrderSpec:
   @Test def schemaTest =
     val result = orderItems.withFk(orderItemProps.orderIdFk).join(orders)
 
-    println(result.mkString("\n"))
+    // println(result.mkString("\n"))
     val expected = List(
       orderItem1 ++ order1,
       orderItem2 ++ order1,
+      orderItem3 ++ order1,
     )
     
     assert(result == expected)
@@ -58,11 +59,11 @@ class OrderSpec:
     println("productTest starting")
     val result = orderItems.withFk(orderItemProps.productIdFk).join(products)
 
-    println(result.mkString("\n"))
+    // println(result.mkString("\n"))
     val expected = List(
       orderItem1 ++ product1,
       orderItem2 ++ product1,
       orderItem3 ++ product2,
     )
     
-    assert(result == expected)
+    assert(result == expected, s"$result != $expected")
