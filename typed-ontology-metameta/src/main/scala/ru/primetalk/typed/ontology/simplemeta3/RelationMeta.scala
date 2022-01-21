@@ -33,9 +33,10 @@ trait Relation0:
     val fk = fk1 
   }
 
-  transparent inline def project[S <: RecordSchema](inline schema: S)(inline values: Values): schema.Values =
-    ???
-
+  // transparent inline def projection[S2 <: RecordSchema](inline s2: S2): List[s2.Values] =
+  //   inline val f = schema.projection(s2)
+  //   values.map(f)
+    
 object Relation0:
   // type Concat[R1 <: Relation0 {type Schema}, R2 <: Relation0{type Schema}] = Relation0 {
   //   type Schema = RecordSchema.Concat[R1#Schema, R2#Schema]
