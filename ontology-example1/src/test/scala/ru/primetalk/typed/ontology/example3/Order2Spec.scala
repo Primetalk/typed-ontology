@@ -1,33 +1,35 @@
 package ru.primetalk.typed.ontology.example3
 
 import org.junit.Test
-import ru.primetalk.typed.ontology.simplemeta3._
+import ru.primetalk.typed.ontology.simplemeta._
 import ru.primetalk.typed.ontology.Record
 import compiletime.constValue
+import compiletime.constValueTuple
 import compiletime.ops.int._
 
 class Order2Spec:
-  import RecordSchema.#:
 
-  object Product extends TableBuilder:
+  object Product extends ru.primetalk.typed.ontology.simplemeta.TableBuilder:
     object id   extends column[Int]
     object name extends column[String]
     type TableSchema = id.type #: name.type #: EmptySchema
-    val tableSchema = fields2(id, name)
+    val tableSchema: TableSchema = id #: name #:  EmptySchema
     val primaryKeySchema = fields1(id)
 
-  object Order extends TableBuilder:
+  object Order extends ru.primetalk.typed.ontology.simplemeta.TableBuilder:
     object id   extends column[Int]
     type TableSchema = id.type #: EmptySchema
-    val tableSchema  = fields1(id)
+    val tableSchema: TableSchema  = fields1(id)
 
-  object OrderItem extends TableBuilder:
+  object OrderItem extends ru.primetalk.typed.ontology.simplemeta.TableBuilder:
     object id        extends column[Int]
     object orderId   extends column[Int]
     object productId extends column[Int]
 
     type TableSchema = id.type #: orderId.type #: productId.type #: EmptySchema
-    val tableSchema  = fields3(id, orderId, productId)
+    val tableSchema: TableSchema = id #: orderId #: productId #: EmptySchema
+    type SmallerSchema = id.type #: orderId.type #: EmptySchema
+    val smallerSchema: SmallerSchema = OrderItem.id #: OrderItem.orderId #: EmptySchema
 
     val orderIdFk   = orderId.foreignKey(Order.id)
     val productIdFk = productId.foreignKey(Product.id)
@@ -49,64 +51,56 @@ class Order2Spec:
     val values = List(orderItem1,orderItem2, orderItem3)
   }
 
-  val smallerSchema = EmptySchema
-    .prepend(OrderItem.orderId)
-    .prepend(OrderItem.id)
+  @Test def projTest =
+    val rel1 = Relation0.apply(OrderItem.tableSchema)(List(orderItem1,orderItem2, orderItem3))
+    val v = rel1.projection(OrderItem.smallerSchema)
+    assert(v.values == List((1,1), (2,1), (3,1)) , s"v=${v.values}")
 
-  @Test def schema1Test =
+  @Test def joinTest =
     val joinSchema = OrderItem.tableSchema.concat(Order.tableSchema)
-    // val result = leftInnerJoin2(orderItems, orders, OrderItem.orderIdFk)
+    val result = leftInnerJoin2(orderItems, orders, OrderItem.orderIdFk)
     val cjs = JointSchema(OrderItem.tableSchema, Order.tableSchema)(joinSchema)
-    // val result = JointSchema(OrderItem.tableSchema, Order.tableSchema)(joinSchema)
-    //   .join(OrderItem.tableSchema, Order.tableSchema)
-    // val result = cjs
-    //   .leftInnerJoin(OrderItem.orderIdFk)(orderItems.values, orders.values)
-      
-  // //     // orderItems.withFk(OrderItem.orderIdFk).join(orders)
-
-  //   println(result.mkString("\n"))
+   
     val expected = List(
       orderItem1 ++ order1,
       orderItem2 ++ order1,
       orderItem3 ++ order1,
     )
     
-  //   assert(result == expected)
+    assert(result == expected)
 
-  // @Test def productTest = 
-  //   println("productTest starting")
-  //   val result = orderItems.withFk(OrderItem.productIdFk).join(products)
+  @Test def productTest = 
+    println("productTest starting")
+    val result = orderItems.withFk(OrderItem.productIdFk).join(products)
 
-  //   println(result.mkString("\n"))
-  //   val expected = List(
-  //     orderItem1 ++ product1,
-  //     orderItem2 ++ product1,
-  //     orderItem3 ++ product2,
-  //   )
+    val expected = List(
+      orderItem1 ++ product1,
+      orderItem2 ++ product1,
+      orderItem3 ++ product2,
+    )
     
-  //   assert(result == expected)
+    assert(result == expected)
 
   @Test def indicesTest =
     type T = OrderItem.tableSchema.IndicesOfProps[OrderItem.TableSchema]
     val res = OrderItem.tableSchema.indicesOfProps(OrderItem.tableSchema)
     assert(res == (0,1,2))
-    val res2 = OrderItem.tableSchema.indicesOfProps(smallerSchema)
+    val res2 = OrderItem.tableSchema.indicesOfProps(OrderItem.smallerSchema)
     assert(res2 == (0,1))
 
   @Test def projectionTest =
     type Iid = orderItems.schema.IndexOfProp[OrderItem.id.type]
     type IInt = RecordSchema.IndexOfTypeInTuple[(Int, String), Int]
-    // val iid: IInt = 0 
+    val iid: IInt = 0
     type IorderId = orderItems.schema.IndexOfProp[OrderItem.orderId.type]
-    type Inds = orderItems.schema.IndicesOfProps[smallerSchema.type]
-    val indicesU = orderItems.schema.indicesOfProps(smallerSchema)
+    type Inds = orderItems.schema.IndicesOfProps[OrderItem.smallerSchema.type]
+    val indicesU = orderItems.schema.indicesOfProps(OrderItem.smallerSchema)
     val indices1: (Int, Int) = indicesU
     val indices2: (Iid, IorderId) = indicesU
-    val indices: orderItems.schema.IndicesOfProps[smallerSchema.type] = indicesU
+    val indices: orderItems.schema.IndicesOfProps[OrderItem.smallerSchema.type] = indicesU
 
     val p = Product.primaryKeySchema.projectorFrom(Product.tableSchema)
     val res = products.values.map(p)
-    // val projected = orderItems.schema.projection(smallerSchema)
     assert(res == List(Tuple1(1), Tuple1(2)), s"res=$res")
 
 
