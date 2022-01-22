@@ -1,4 +1,4 @@
-package ru.primetalk.typed.ontology.simplemeta
+package ru.primetalk.typed.ontology.simplemeta1
 
 import scala.language.higherKinds
 import ru.primetalk.typed.ontology.Record
