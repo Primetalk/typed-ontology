@@ -13,6 +13,7 @@ import scala.quoted.Expr.ofList
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int._
 import scala.compiletime.constValue
+import scala.compiletime.erasedValue
 import scala.compiletime.constValueTuple
 import java.sql.ResultSet
 import scala.annotation.targetName
@@ -219,6 +220,18 @@ object RecordSchema:
  
   def empty: EmptySchema = EmptySchema
 
+  type TupleToSchema[T <: Tuple] <: RecordSchema =
+    T match
+      case EmptyTuple => EmptySchema
+      case p *: t => p #: TupleToSchema[t]
+
+  transparent inline def constSchema[S <: RecordSchema]: S =
+    inline erasedValue[S] match
+      case _: EmptySchema      => RecordSchema.empty.asInstanceOf[S]
+      case _: SchemaCons[p, s] =>
+        (constValue[p] #: constSchema[s]).asInstanceOf[S]
+
+
 extension [S <: RecordSchema](schema: S)
   transparent inline infix def prepend_:(inline p: RecordProperty0) =
     SchemaCons[p.type, S](p, schema)
@@ -249,7 +262,7 @@ trait SchemaBuilder extends RecordSchemaBuilderBase:
   transparent inline def fields3[P1<:RecordProperty0, P2<:RecordProperty0, P3<:RecordProperty0](inline p1: P1, inline p2: P2, inline p3: P3) = 
     p1 #: p2 #: p3 #: RecordSchema.empty
 
-  transparent inline def tupleToSchema[T <: Tuple](inline t: T): RecordSchema = 
+  transparent inline def tupleToSchema[T <: Tuple](inline t: T): RecordSchema.TupleToSchema[T] = 
     ${tupleToSchemaImpl('t)}
 
   transparent inline def showExpr(inline a: Any): String = 
@@ -293,14 +306,30 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
       val values = values1
     }
 
-def tupleToSchemaImpl[T<:Tuple](t: Expr[T])(using Quotes): Expr[RecordSchema] = 
+def tupleToSchemaImpl[T<:Tuple](t: Expr[T])(using tt: Type[T])(using Quotes): Expr[RecordSchema.TupleToSchema[T]] = 
   t match 
-      case '{EmptyTuple} => '{EmptySchema}
-      case '{($a: RecordProperty0, $b: RecordProperty0)} => 
-        '{ $a #: $b #: EmptySchema}
-      case '{($a: RecordProperty0) *: ($t2: Tuple)} => 
-        '{$a #: ${tupleToSchemaImpl(t2)}}
-        
+      case '{EmptyTuple} => '{EmptySchema.asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      case '{Tuple1($a: RecordProperty0)} => '{($a #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      case '{Tuple2($a: RecordProperty0, $b: RecordProperty0)} => '{($a #: $b #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      case '{Tuple3($a: RecordProperty0, $b: RecordProperty0, $c: RecordProperty0)} => '{($a #: $b #: $c #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      case '{Tuple4($a: RecordProperty0, $b: RecordProperty0, $c: RecordProperty0, $d: RecordProperty0)} => '{($a #: $b #: $c #: $d #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      case '{Tuple5($a: RecordProperty0, $b: RecordProperty0, $c: RecordProperty0, $d: RecordProperty0, $e: RecordProperty0)} => '{($a #: $b #: $c #: $d #: $e #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      case '{Tuple6($a: RecordProperty0, $b: RecordProperty0, $c: RecordProperty0, $d: RecordProperty0, $e: RecordProperty0, $f: RecordProperty0)} => '{($a #: $b #: $c #: $d #: $e #: $f #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+      // TODO: add matches to all TupleN
+      case '{($a: RecordProperty0) *: ($t2: Tuple)} => '{(${a} #: ${tupleToSchemaImpl(t2)}).asInstanceOf[RecordSchema.TupleToSchema[T]]}
+
+// The following hangs..
+def tupleToSchemaImpl2[T<:Tuple](t: Expr[T])(using tt: Type[T])(using Quotes): Expr[RecordSchema.TupleToSchema[T]] = 
+  '{
+    $t match 
+        case EmptyTuple => EmptySchema.asInstanceOf[RecordSchema.TupleToSchema[T]]
+        case (a: RecordProperty0, b: RecordProperty0) => 
+          (a #: b #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]
+        case (a: RecordProperty0, b: RecordProperty0, c: RecordProperty0) => 
+          (a #: b #: c #: EmptySchema).asInstanceOf[RecordSchema.TupleToSchema[T]]
+        case (a: RecordProperty0) *: (t2: Tuple) => 
+          (a #: ${tupleToSchemaImpl('{t2})}).asInstanceOf[RecordSchema.TupleToSchema[T]]
+  }
 def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] = 
   Expr(a.show)
 
