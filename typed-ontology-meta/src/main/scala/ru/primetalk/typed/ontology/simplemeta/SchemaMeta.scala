@@ -74,8 +74,25 @@ sealed trait RecordSchema:
       case sc: SchemaCons[p, s] => 
         sc.p #: sc.schema.concat(schema2)
 
-  transparent inline def concatValues[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2): (Values, schema2.Values) => Tuple.Concat[Values, schema2.Values] = 
-    (v1, v2) => v1 ++ v2
+  transparent inline def concatValues[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2)(inline schema3: RecordSchema.Concat[this.type, schema2.type]): (Values, schema2.Values) => schema3.Values = 
+    (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
+
+
+    /** Type of the concatenation of two schemas. */
+  type PrependOtherSchema[S1 <: RecordSchema] <: RecordSchema = 
+    S1 match 
+      case EmptySchema      => this.type
+      case SchemaCons[p, s] => SchemaCons[p, PrependOtherSchema[s]]
+
+  transparent inline def prependOtherSchema[S1 <: RecordSchema](inline s1: S1): PrependOtherSchema[S1] =
+    inline s1 match
+      case _: EmptySchema       => 
+        this
+      case sc: SchemaCons[p, s] => 
+        val ps: PrependOtherSchema[s] = prependOtherSchema[s](sc.schema)
+        SchemaCons[p, PrependOtherSchema[s]](sc.p, ps)
+  transparent inline def prependValues[S1 <: RecordSchema](inline schema1: S1)(inline schema3: PrependOtherSchema[S1]): (schema1.Values, Values) => schema3.Values = 
+    (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
   type PropertyGetter[P <: RecordProperty0] = 
     Values => RecordProperty0.PropertyValueType[P]
@@ -306,6 +323,9 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
       val values = values1
     }
 
+  transparent inline def relation2[V[_]](inline values1: V[Row]): Relation2Meta[V] = 
+    Relation2Meta(tableSchema)(values1)
+  
 def tupleToSchemaImpl[T<:Tuple](t: Expr[T])(using tt: Type[T])(using Quotes): Expr[RecordSchema.TupleToSchema[T]] = 
   t match 
       case '{EmptyTuple} => '{EmptySchema.asInstanceOf[RecordSchema.TupleToSchema[T]]}

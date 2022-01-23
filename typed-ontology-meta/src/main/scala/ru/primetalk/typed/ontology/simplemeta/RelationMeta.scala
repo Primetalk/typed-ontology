@@ -53,9 +53,16 @@ object Relation0:
       val values = data
     }
 
+  // type Product[R1 <: Relation0, R2 <: Relation0] = 
+  //   R1 match
+  //     case 
+  //   Relation0 {
+  //     type Schema = RecordSchema.Concat[R1#Schema, R2#Schema]
+  //   }
+
 import RecordSchema.Concat
 
-transparent inline def leftInnerJoin2[
+transparent inline def fullInnerJoin[
     T1 <: Relation0,
     T2 <: Relation0,
     FK <: ForeignKeyId0](
@@ -67,5 +74,17 @@ transparent inline def leftInnerJoin2[
       row1 <- table1.values
       row2 <- table2.values
       if table1.schema.get(fk.left)(row1) == table2.schema.get(fk.right)(row2)
+    yield
+      row1 ++ row2
+
+transparent inline def crossProduct[
+    T1 <: Relation0,
+    T2 <: Relation0](
+    inline table1: T1, 
+    inline table2: T2
+    ): List[Tuple.Concat[table1.Values, table2.Values]] = 
+    for
+      row1 <- table1.values
+      row2 <- table2.values
     yield
       row1 ++ row2

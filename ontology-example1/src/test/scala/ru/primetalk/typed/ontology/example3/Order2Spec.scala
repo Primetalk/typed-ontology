@@ -40,7 +40,7 @@ class Order2Spec extends TestData:
     joinSchema.toString should equal(OrderItem.tableSchema.toString + ", " + Order.tableSchema.toString)
   }
   test("Join using foreign key"){
-    val result = leftInnerJoin2(orderItems, orders, OrderItem.orderIdFk)
+    val result = fullInnerJoin(orderItems, orders, OrderItem.orderIdFk)
     // val cjs = JointSchema(OrderItem.tableSchema, Order.tableSchema)(joinSchema)
    
     val expected = List(
@@ -50,6 +50,15 @@ class Order2Spec extends TestData:
     )
     
     assertResult(expected)(result)
+  }
+  test("Cross product"){
+    val result = crossProduct(orderItems, orders)
+    val expected = List(
+      orderItem1 ++ order1,
+      orderItem2 ++ order1,
+      orderItem3 ++ order1,
+    )
+    result should equal(expected)
   }
   // test("Join using withFk"){
   //   val result = orderItems.withFk(OrderItem.productIdFk).join(products)
