@@ -78,7 +78,7 @@ sealed trait RecordSchema:
     (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
 
-    /** Type of the concatenation of two schemas. */
+  /** Type of the concatenation of two schemas. */
   type PrependOtherSchema[S1 <: RecordSchema] <: RecordSchema = 
     S1 match 
       case EmptySchema      => this.type
@@ -92,6 +92,14 @@ sealed trait RecordSchema:
         val ps: PrependOtherSchema[s] = prependOtherSchema[s](sc.schema)
         SchemaCons[p, PrependOtherSchema[s]](sc.p, ps)
   transparent inline def prependValues[S1 <: RecordSchema](inline schema1: S1)(inline schema3: PrependOtherSchema[S1]): (schema1.Values, Values) => schema3.Values = 
+    (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
+
+  /** Type of the concatenation of two schemas. */
+  type AppendOtherSchema[S2 <: RecordSchema] <: RecordSchema
+
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2]
+ 
+  transparent inline def appendValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: AppendOtherSchema[S2]): (Values, schema2.Values) => schema3.Values =
     (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
   type PropertyGetter[P <: RecordProperty0] = 
@@ -151,7 +159,10 @@ case object EmptySchema extends RecordSchema:
   // transparent inline def projectorFrom[S1<: RecordSchema](inline s1: S1)(using ev: PropertySet <:< s1.PropertySet): s1.Values => Values =
   transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](inline s1: S1): ValuesGetter[s1.Values] =
     _ => EmptyTuple
-    
+  type AppendOtherSchema[S2 <: RecordSchema] = S2
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] = 
+    s2
+
 sealed trait NonEmptySchema extends RecordSchema:
   type Properties <: NonEmptyTuple
   type ValuesElem[I <: Int] = Tuple.Elem[Values, I]
@@ -191,6 +202,10 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 
     val p1: schema.ValuesGetter[s1.Values] = schema.projectorFrom(s1)
     (v: s1.Values) => f1(v) *: p1(v)
+
+  type AppendOtherSchema[S2 <: RecordSchema] = SchemaCons[P, schema.AppendOtherSchema[S2]]
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] =
+    p #: schema.appendOtherSchema(s2)
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 

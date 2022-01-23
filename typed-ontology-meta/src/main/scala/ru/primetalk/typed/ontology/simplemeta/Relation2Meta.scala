@@ -37,6 +37,22 @@ abstract class Relation2Meta[V[_]]:
       val schema = schema3
       val rows = v
     }
+  transparent inline def crossProduct[R2 <: Relation2Meta[V]](inline r2: R2)(using FlatMap[V]) =
+    import cats.FlatMap.ops.toAllFlatMapOps
+    val schema3 = schema.appendOtherSchema(r2.schema)
+    // val schema3 = schema.concat[schema.type, r2.schema.type](r2.schema)//[r2.schema.type]
+    val f: (schema.Values, r2.schema.Values) => schema3.Values = schema.appendValues(r2.schema)(schema3)
+    val v = 
+      for
+        row1 <- this.rows
+        row2 <- r2.rows
+      yield
+        f(row1, row2)
+    new Relation2Meta[V] {
+      type Schema = schema3.type
+      val schema = schema3
+      val rows = v
+    }
 
 object Relation2Meta:
   transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =

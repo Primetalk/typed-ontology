@@ -42,14 +42,14 @@ class Rel2Spec extends TestDataRel2:
       (3,1,2,2,"product2")
     ))
   }
-  // test("cross product"){
-  //   val poi = Relation2Meta.crossProduct(orderItems, products)
-  //   poi.rows should equal(List(
-  //     (1,1,1,1,"product1"), 
-  //     (1,1,1,2,"product2"), 
-  //     (2,1,1,1,"product1"), 
-  //     (2,1,1,2,"product2"), 
-  //     (3,1,2,1,"product1"), 
-  //     (3,1,2,2,"product2")
-  //   ))
-  // }
+  test("cross product"){
+    val poi = orderItems.crossProduct(products)
+    poi.rows should equal(List(
+      (1,1,1,1,"product1"), 
+      (1,1,1,2,"product2"), 
+      (2,1,1,1,"product1"), 
+      (2,1,1,2,"product2"), 
+      (3,1,2,1,"product1"), 
+      (3,1,2,2,"product2")
+    ))
+  }
