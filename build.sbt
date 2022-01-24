@@ -20,11 +20,14 @@ ThisBuild / scalaVersion := scala3Version
 //   //  "-Xmax-inlines=64"
 // )
 
+val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.4"
+val catsCore   = "org.typelevel" %% "cats-core" % "2.7.0"
 
 val commonSettings = Seq(
   scalaVersion := scala3Version,
   // scalacOptions += "-Xmax-inlines=50",
   libraryDependencies ++= Seq(
+    catsCore,
     "com.novocode" % "junit-interface" % "0.11" % Test,
     "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
     "org.scalatest"  %% "scalatest"  % "3.2.10" % Test,

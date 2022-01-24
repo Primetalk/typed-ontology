@@ -322,7 +322,7 @@ class RecordSchemaBuilder[R] extends PropertiesBuilder with ForeignKeyBuilder wi
 abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder with SchemaBuilder:
   type RecordType = this.type
 
-  protected abstract class column[T: ClassTag] extends SimplePropertyId[RecordType, T]("", summon):
+  abstract class column[T: ClassTag] extends SimplePropertyId[RecordType, T]("", summon):
     override val name = this.getClass.getSimpleName.replace("$", "")
 
   type TableSchema <: RecordSchema
