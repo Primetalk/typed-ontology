@@ -21,7 +21,11 @@ ThisBuild / scalaVersion := scala3Version
 // )
 
 val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.4"
-val catsCore   = "org.typelevel" %% "cats-core" % "2.7.0"
+val catsCore   = "org.typelevel" %% "cats-core"   % "2.7.0"
+val fs2 = libraryDependencies ++= Seq(
+  "co.fs2" %% "fs2-core" % "3.2.4",
+  "co.fs2" %% "fs2-io"   % "3.2.4",
+)
 
 val commonSettings = Seq(
   scalaVersion := scala3Version,
@@ -48,6 +52,7 @@ lazy val typedOntologyMetaMeta = project
   .in(file("typed-ontology-metameta"))
   .settings(
     name := "typed-ontology-metameta",
+    fs2,
   )
   .settings(commonSettings :_*)
 
