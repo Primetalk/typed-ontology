@@ -12,7 +12,7 @@ import cats.Foldable
 // TODO: collection operations:
 //       set union, set difference?
 //       selection σ (filtering)
-// TODO: calculate columns
+// DONE: calculate columns
 // TODO: aggregate
 
 abstract class Relation2Meta[V[_]]:
@@ -81,6 +81,15 @@ abstract class Relation2Meta[V[_]]:
       val schema = schema3
       val rows = vals
     }
+  transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, p2: P2)(using Functor[V]) =
+    val schema3 = schema.rename(p1, p2)
+    val vals = rows.asInstanceOf[V[schema3.Values]] // to avoid iteration and map
+    new Relation2Meta[V] {
+      type Schema = schema3.type
+      val schema = schema3
+      val rows = vals
+    }
+
 object Relation2Meta:
   transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =
     new Relation2Meta[V] {

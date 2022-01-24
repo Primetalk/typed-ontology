@@ -123,7 +123,12 @@ sealed trait RecordSchema:
   @targetName("SchemaCons")
   inline def #: [P <: RecordProperty0, This >: this.type <: RecordSchema] (p: P): P #: This =
     SchemaCons[P, This](p, this)
-    
+
+  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema
+
+  transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, inline p2: P2): RecordSchema =
+    replace(p1, p2)
+
 object Converter: // TODO: construct expression to convert values from one schema to another
   transparent inline def converter[S1<: RecordSchema, S2<:RecordSchema](inline s1: S1, inline s2: S2)(indices: s1.IndicesOfProps[S2]): s1.Values => s2.Values =
     (v: s1.Values) => 
@@ -162,6 +167,9 @@ case object EmptySchema extends RecordSchema:
   type AppendOtherSchema[S2 <: RecordSchema] = S2
   transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] = 
     s2
+
+  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
+    EmptySchema
 
 sealed trait NonEmptySchema extends RecordSchema:
   type Properties <: NonEmptyTuple
@@ -206,6 +214,11 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   type AppendOtherSchema[S2 <: RecordSchema] = SchemaCons[P, schema.AppendOtherSchema[S2]]
   transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] =
     p #: schema.appendOtherSchema(s2)
+
+  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
+    inline p1 match
+      case p => p2 #: schema
+      case _ => p #: schema.replace(p1, p2)
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 

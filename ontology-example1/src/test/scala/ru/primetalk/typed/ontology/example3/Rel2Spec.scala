@@ -66,3 +66,14 @@ class Rel2Spec extends TestDataRel2:
         |(30,3,1,2)""".stripMargin
     )
   }
+  test("Rename column"){
+    object id2 extends OrderItem.column[Int]
+    val p = orderItems.rename(OrderItem.id, id2)
+    p.show should equal(
+      """id2: int, orderId: int, productId: int
+        |-----
+        |(1,1,1)
+        |(2,1,1)
+        |(3,1,2)""".stripMargin
+    )
+  }
