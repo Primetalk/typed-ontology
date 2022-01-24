@@ -77,3 +77,13 @@ class Rel2Spec extends TestDataRel2:
         |(3,1,2)""".stripMargin
     )
   }
+  test("Filter"){
+    val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
+    object id2 extends OrderItem.column[Int]
+    val p = orderItems.filter(idGetter(_) == 1)
+    p.rows should equal(List(orderItem1))
+  }
+  test("Union"){
+    val p = orderItems ++ orderItems
+    p.rows.size should equal( orderItems.rows.size * 2)
+  }
