@@ -5,6 +5,7 @@ import cats.Functor
 import cats.FlatMap
 import cats.Foldable
 import cats.Traverse
+import cats.SemigroupK
 import cats.MonoidK
 
 // TODO: specific relational algebra operations:
@@ -81,11 +82,11 @@ abstract class Relation2Meta[V[_]]:
     val vals = rows.asInstanceOf[V[schema3.Values]] // to avoid iteration and map
     Relation2Meta[schema3.type, V](schema3)(vals)
 
-  transparent inline def ++[R2 <: Relation2Meta[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using MonoidK[V])(using Functor[V]) =
-    val mk = MonoidK[V]
-    // val vals = mk.combineK(rows, r2.rows.map(ev))
+  transparent inline def ++[R2 <: Relation2Meta[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using SemigroupK[V])(using Functor[V]) =
+    import cats.syntax.all.toSemigroupKOps
+    // val vals = rows <+> r2.rows.map(ev)
     // to avoid iteration and map we cast:
-    val vals = mk.combineK(rows, r2.rows.asInstanceOf[V[schema.Values]]) // to avoid iteration and map
+    val vals = rows <+> r2.rows.asInstanceOf[V[schema.Values]] // to avoid iteration and map
     Relation2Meta(schema)(vals)
 
   transparent inline def filter(inline predicate: Row => Boolean)(using cats.FunctorFilter[V]) =
@@ -102,3 +103,6 @@ object Relation2Meta:
       val schema = s1
       val rows = v
     }
+
+  transparent inline def empty[S1 <: RecordSchema, V[_]](inline s1: S1)(using MonoidK[V]) =
+    apply(s1)(MonoidK[V].empty)

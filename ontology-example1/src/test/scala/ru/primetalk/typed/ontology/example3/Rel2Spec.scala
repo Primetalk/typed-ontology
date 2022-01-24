@@ -87,3 +87,8 @@ class Rel2Spec extends TestDataRel2:
     val p = orderItems ++ orderItems
     p.rows.size should equal( orderItems.rows.size * 2)
   }
+
+  test("empty"){
+    val p = Relation2Meta.empty[OrderItem.tableSchema.type, List](OrderItem.tableSchema)
+    p.rows shouldBe empty
+  }
