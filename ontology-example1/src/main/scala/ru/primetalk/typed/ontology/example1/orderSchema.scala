@@ -8,14 +8,14 @@ object Product extends TableBuilder:
   object id   extends column[Int]
   object name extends column[String]
   type TableSchema = id.type #: name.type #: EmptySchema
-  val tableSchema: TableSchema = id #: name #:  EmptySchema
-  val primaryKeySchema = id #: EmptySchema
+  val tableSchema: TableSchema = fields(id, name)
+  val primaryKeySchema = fields(id)
 
 object Order extends TableBuilder:
   object id   extends column[Int]
   object date extends column[LocalDateTime]
   type TableSchema = id.type #: date.type #: EmptySchema
-  val tableSchema: TableSchema  = id #: date #: EmptySchema
+  val tableSchema: TableSchema  = fields(id, date)
 
 object OrderItem extends TableBuilder:
   object id        extends column[Int]
