@@ -11,10 +11,12 @@ import scala.quoted.*
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int.S
 import scala.compiletime.constValue
-// TODO: fs2-Stream-based relations
+// DONE: fs2-Stream-based relations
 // DONE: relational algebra, including projection
-// TODO: Table + columns terminology
-// TODO: move simplemeta to -meta
+// DONE: Table + columns terminology
+// DONE: move simplemeta to -meta
+/** A simple version of relation that doesn't depend on cats and keep data in a List.
+ */
 trait Relation0:
   type Schema <: RecordSchema
   val schema: Schema

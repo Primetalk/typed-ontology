@@ -38,3 +38,6 @@ object RecordProperty0:
 trait PropertiesBuilder extends RecordSchemaBuilderBase:
   transparent inline def property[T: ClassTag](inline name: String) = 
     new SimplePropertyId[RecordType, T](name, summon){}
+  /** Convenient mechanism to create a self-typed property.*/
+  abstract class column[T: ClassTag] extends SimplePropertyId[RecordType, T]("", summon):
+    override val name = this.getClass.getSimpleName.replace("$", "")
