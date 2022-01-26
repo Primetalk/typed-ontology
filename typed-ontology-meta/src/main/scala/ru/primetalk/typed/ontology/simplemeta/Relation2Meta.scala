@@ -7,18 +7,39 @@ import cats.Foldable
 import cats.Traverse
 import cats.SemigroupK
 import cats.MonoidK
+import cats.FunctorFilter
+
+/*
+- Cartesian product, 
+- join, 
+- projection and 
+- selection are implemented.
+
+A generic representation might be a 
+- Map[String, Any], 
+- a tuple with appropriate values, 
+- a tuple of Options, 
+- a tuple of Eithers, … 
+- conversion becomes error free, straight-forward and fully automated.  
+This opens a path to implement 
+Cartesian products, 
+projections, and other operations of relational algebra. 
+
+*/
 
 // TODO: specific relational algebra operations:
 //       DONE: projection Π
 //       DONE: rename (ρ)
 //       DONE: cross product, 
-//       join, Natural join (⋈) on foreign key
-// TODO: collection operations:
+//       join,
+//       Natural join (⋈)
+//         on foreign key
+// DONE: collection operations:
 //       DONE: set union,
-//       ~: set difference? - via replaceRows
+//       DONE: set difference? - via replaceRows
 //       DONE: selection σ (filtering)
 // DONE: calculate columns
-// TODO: groupBy + aggregate
+// TODO: groupBy + aggregate (groupMapReduce?)
 
 abstract class Relation2Meta[V[_]]:
   self =>
@@ -89,12 +110,21 @@ abstract class Relation2Meta[V[_]]:
     val vals = rows <+> r2.rows.asInstanceOf[V[schema.Values]] // to avoid iteration and map
     Relation2Meta(schema)(vals)
 
-  transparent inline def filter(inline predicate: Row => Boolean)(using cats.FunctorFilter[V]) =
-    import cats.FunctorFilter.ops.toAllFunctorFilterOps
-    Relation2Meta(schema)(rows.filter(predicate))
-
   transparent inline def replaceRows(inline f: V[Row] => V[Row]) =
     Relation2Meta(schema)(f(rows))
+
+  transparent inline def filter(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
+    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    replaceRows(_.filter(predicate))
+
+  transparent inline def filterNot(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
+    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    replaceRows(_.filterNot(predicate))
+
+  transparent inline def --[R2 <: Relation2Meta[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using Foldable[V])(using FunctorFilter[V]) =
+    import cats.syntax.all.toFoldableOps
+    val set2 = r2.rows.asInstanceOf[V[Row]].foldLeft(Set[Row]())(_ + _)
+    filterNot(set2.contains)
 
 object Relation2Meta:
   transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =
