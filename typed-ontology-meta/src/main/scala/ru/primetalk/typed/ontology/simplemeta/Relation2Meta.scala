@@ -8,6 +8,10 @@ import cats.Traverse
 import cats.SemigroupK
 import cats.MonoidK
 import cats.FunctorFilter
+import cats.kernel.Semigroup
+import cats.kernel.Order
+import scala.collection.immutable.SortedMap
+import cats.Applicative
 
 /*
 - Cartesian product, 
@@ -39,15 +43,20 @@ projections, and other operations of relational algebra.
 //       DONE: set difference? - via replaceRows
 //       DONE: selection σ (filtering)
 // DONE: calculate columns
-// TODO: groupBy + aggregate (groupMapReduce?)
+// DONE: groupBy, groupMapReduce
+// TODO: sql-style grouping + aggregate (with on-the-fly schema construction)
 
 abstract class Relation2Meta[V[_]]:
   self =>
+  
   type Schema <: RecordSchema
   val schema: Schema
   type Row = schema.Values
   val rows: V[schema.Values]
-
+  type Self = Relation2Meta[V] {
+    type Schema = self.Schema
+    type Row = self.Row
+  }
   def show(using Foldable[V]) =
     import cats.Foldable.ops.toAllFoldableOps
 
@@ -121,10 +130,72 @@ abstract class Relation2Meta[V[_]]:
     import cats.FunctorFilter.ops.toAllFunctorFilterOps
     replaceRows(_.filterNot(predicate))
 
+  /** NB: O(N + M ln M), N = rows.size, M = R2.rows.size */
   transparent inline def --[R2 <: Relation2Meta[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using Foldable[V])(using FunctorFilter[V]) =
     import cats.syntax.all.toFoldableOps
     val set2 = r2.rows.asInstanceOf[V[Row]].foldLeft(Set[Row]())(_ + _)
     filterNot(set2.contains)
+
+  final def groupBy[B](f: Row => B)(using Order[B])(using Foldable[V])(using MonoidK[V])(using Applicative[V]): SortedMap[B, V[Row]] =
+    groupMap(key = f)(identity)
+ 
+  final def groupMap[K, B](key: Row => K)(f: Row => B)(using K: Order[K])(using Foldable[V])(using SemigroupK[V])(using Applicative[V]): SortedMap[K, V[B]] =
+    given ordering: Ordering[K] = K.toOrdering
+    import cats.syntax.all.toFoldableOps
+    import cats.syntax.all.toSemigroupKOps
+    val app = Applicative[V]
+    rows.foldLeft(SortedMap.empty[K, V[B]])( (m, elem) => 
+      val k = key(elem)
+      m.get(k) match {
+        case Some(b) => m.updated(key = k, value = b <+> app.pure(f(elem)))
+        case None    => m + (k -> app.pure(f(elem)))
+      }
+    )
+  final def groupMapReduce[K, B](key: Row ⇒ K)(f: Row ⇒ B)(using K: Order[K], S: Semigroup[B])(using Foldable[V]): SortedMap[K, B] = 
+    groupMapReduceWith(key)(f)(S.combine)
+    
+  final def groupMapReduceWith[K, B](key: Row => K)(f: Row => B)(combine: (B, B) => B)(using K: Order[K])(using Foldable[V]): SortedMap[K, B] = 
+    given ordering: Ordering[K] = K.toOrdering
+    import cats.syntax.all.toFoldableOps
+
+    rows.foldLeft(SortedMap.empty[K, B])( (m, elem) => 
+      val k = key(elem)
+
+      m.get(k) match {
+        case Some(b) => m.updated(key = k, value = combine(b, f(elem)))
+        case None    => m + (k -> f(elem))
+      }
+      
+    )
+  def toSemigroup[A](combineImpl: (A, A) => A): Semigroup[A] = 
+    new Semigroup[A]:
+      def combine(a: A, b: A): A = combineImpl(a,b)
+
+  transparent inline def groupMapReduceS[
+    KeySchema <: RecordSchema,
+    AggregateSchema <: RecordSchema
+    // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
+    ](
+    inline keySchema: KeySchema,
+    inline aggregateSchema: AggregateSchema
+    )(
+    inline resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type]
+    )(
+      inline k: Row => keySchema.Values,
+      inline m: Row => aggregateSchema.Values
+    )(using Order[keySchema.Values])
+    (using Semigroup[aggregateSchema.Values])
+    (using MonoidK[V])
+    (using Applicative[V])
+    (using Foldable[V]): Relation2Meta[V]{
+      type Schema = resultSchema.type
+    } = 
+      val grouped = groupMapReduce[keySchema.Values, aggregateSchema.Values](k)(m)
+      val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
+      val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
+      import cats.MonoidK.ops.toAllMonoidKOps
+      val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])((b, a) => b <+> Applicative[V].pure(a))
+      Relation2Meta.apply(resultSchema)(vals)
 
 object Relation2Meta:
   transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =
