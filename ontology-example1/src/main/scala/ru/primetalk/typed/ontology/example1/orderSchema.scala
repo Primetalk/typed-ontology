@@ -5,10 +5,13 @@ import ru.primetalk.typed.ontology.Record
 import java.time.LocalDateTime
 
 object Product extends TableBuilder:
-  object id   extends column[Int]
-  object name extends column[String]
-  type TableSchema = id.type #: name.type #: EmptySchema
-  val tableSchema: TableSchema = fields(id, name)
+  object id    extends column[Int]
+  object name  extends column[String]
+  object price extends column[BigInt]
+  
+  type TableSchema = id.type #: name.type #: price.type #: EmptySchema
+  val tableSchema: TableSchema = fields(id, name, price)
+  val idNameSchema = fields(id, name)
   val primaryKeySchema = fields(id)
 
 object Order extends TableBuilder:
@@ -21,6 +24,7 @@ object OrderItem extends TableBuilder:
   object id        extends column[Int]
   object orderId   extends column[Int]
   object productId extends column[Int]
+  // val productId = Product.id// does not work well with toString
 
   type TableSchema = id.type #: orderId.type #: productId.type #: EmptySchema
   // val tableSchema: TableSchema = RecordSchema.constSchema[TableSchema]

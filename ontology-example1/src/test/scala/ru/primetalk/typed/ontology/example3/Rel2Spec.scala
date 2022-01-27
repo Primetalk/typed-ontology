@@ -3,12 +3,13 @@ package ru.primetalk.typed.ontology.example3
 import ru.primetalk.typed.ontology.example1._
 import java.time.LocalDateTime
 import cats.instances._
+import ru.primetalk.typed.ontology.simplemeta.EmptySchema
 import ru.primetalk.typed.ontology.simplemeta.Relation2Meta
 import ru.primetalk.typed.ontology.simplemeta.SimplePropertyId
 
 trait TestDataRel2 extends BaseSpec:
-  val product1: Product.Row = (1, "product1")
-  val product2: Product.Row = (2, "product2")
+  val product1: Product.Row = (1, "product1", BigInt(10))
+  val product2: Product.Row = (2, "product2", BigInt(20))
   val products = Product.relation2(List(product1, product2))
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
   val orders = Order.relation2(List(order1))
@@ -35,30 +36,34 @@ class Rel2Spec extends TestDataRel2:
   test("cross product from"){
     val poi = products.crossProductFrom(orderItems)
     poi.rows should equal(List(
-      (1,1,1,1,"product1"), 
-      (1,1,1,2,"product2"), 
-      (2,1,1,1,"product1"), 
-      (2,1,1,2,"product2"), 
-      (3,1,2,1,"product1"), 
-      (3,1,2,2,"product2")
+      (1,1,1,1,"product1", BigInt(10)), 
+      (1,1,1,2,"product2", BigInt(20)), 
+      (2,1,1,1,"product1", BigInt(10)), 
+      (2,1,1,2,"product2", BigInt(20)), 
+      (3,1,2,1,"product1", BigInt(10)), 
+      (3,1,2,2,"product2", BigInt(20)),
     ))
   }
   test("cross product"){
     val poi = orderItems.crossProduct(products)
-    poi.rows should equal(List(
+    val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
+    val res = poi.projection(s)
+    res.rows should equal(List(
       (1,1,1,1,"product1"), 
       (1,1,1,2,"product2"), 
       (2,1,1,1,"product1"), 
       (2,1,1,2,"product2"), 
       (3,1,2,1,"product1"), 
-      (3,1,2,2,"product2")
+      (3,1,2,2,"product2"),
     ))
   }
   test("Calculate column"){
     object price extends OrderItem.column[Long]
     val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
     val p = orderItems.prependCalcColumn(price)(idGetter(_) * 10L)
-    p.show should equal(
+    val s = price #: OrderItem.tableSchema
+    val res = p.projection(s)
+    res.show should equal(
       """price: long, id: int, orderId: int, productId: int
         |-----
         |(10,1,1,1)
@@ -91,4 +96,8 @@ class Rel2Spec extends TestDataRel2:
   test("empty"){
     val p = Relation2Meta.empty[OrderItem.tableSchema.type, List](OrderItem.tableSchema)
     p.rows shouldBe empty
+  }
+
+  test("Expenses report"){
+
   }

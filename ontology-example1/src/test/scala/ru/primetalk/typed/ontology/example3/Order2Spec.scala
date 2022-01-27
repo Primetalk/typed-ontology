@@ -10,8 +10,8 @@ import ru.primetalk.typed.ontology.example1._
 import java.time.LocalDateTime
 
 trait TestData extends BaseSpec:
-  val product1: Product.Row = (1, "product1")
-  val product2: Product.Row = (2, "product2")
+  val product1: Product.Row = (1, "product1", BigInt(10))
+  val product2: Product.Row = (2, "product2", BigInt(20))
   object products extends Product.Relation1{ val values = List(product1, product2)}
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
   object orders extends Order.Relation1{ val values = List(order1) }

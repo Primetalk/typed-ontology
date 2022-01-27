@@ -70,14 +70,10 @@ abstract class Relation2Meta[V[_]]:
   transparent inline def projection[S2 <: RecordSchema](inline s2: S2)(using Functor[V]) =
     import cats.Functor.ops.toAllFunctorOps
     val f = s2.projectorFrom(schema)
-    val vals = self.rows.map(f)
-    new Relation2Meta[V] {
-      type Schema = s2.type
-      val schema = s2
-      val rows = vals
-    }
+    val vals = rows.map(f)
+    Relation2Meta(s2)(vals)
 
-  transparent inline def crossProductFrom[R1 <: Relation2Meta[V]](inline r1: R1)(using FlatMap[V]) =
+  transparent inline def crossProductFrom[R1 <: Relation2Meta[V]](inline r1: R1)(using FlatMap[V]): Relation2Meta[V] =
     import cats.FlatMap.ops.toAllFlatMapOps
     val schema3 = schema.prependOtherSchema(r1.schema)
     val f: (r1.schema.Values, schema.Values) => schema3.Values = schema.prependValues(r1.schema)(schema3)
@@ -87,7 +83,7 @@ abstract class Relation2Meta[V[_]]:
         row2 <- this.rows
       yield
         f(row1, row2)
-    Relation2Meta[schema3.type, V](schema3)(vals)
+    Relation2Meta(schema3)(vals)
 
   transparent inline def crossProduct[R2 <: Relation2Meta[V]](inline r2: R2)(using FlatMap[V]) =
     import cats.FlatMap.ops.toAllFlatMapOps

@@ -126,6 +126,8 @@ sealed trait RecordSchema:
   /** Replaces properties of the same type. A bit more restricted version of replace. */
   transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, inline p2: P2): RecordSchema =
     replace(p1, p2)
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): RecordSchema
   type OptionValues = HValues[Option]
 
   transparent inline def transformOption: OptionValues => Option[Values]
@@ -164,6 +166,9 @@ case object EmptySchema extends RecordSchema:
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
     EmptySchema
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): RecordSchema =
+    EmptySchema
+
   transparent inline def transformOption: OptionValues => Option[Values] =
     _ => Some(EmptyTuple)
 
@@ -214,6 +219,11 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
     inline p1 match
       case p => p2 #: schema
       case _ => p #: schema.replace(p1, p2)
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): RecordSchema =
+    inline p1 match
+      case p => schema
+      case _ => p #: schema.remove(p1)
 
   transparent inline def transformOption: OptionValues => Option[Values] =
     val schemaTransformOption = schema.transformOption
