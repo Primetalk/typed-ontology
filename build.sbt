@@ -1,5 +1,5 @@
-val scala3Version = "3.1.0"
-val mainVersion = "0.1.0-SNAPSHOT"
+val scala3Version = "3.1.2-RC1"
+val mainVersion = "0.2.0-SNAPSHOT"
 
 ThisBuild / organization := "ru.primetalk"
 ThisBuild / version      := mainVersion
