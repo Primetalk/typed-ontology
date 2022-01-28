@@ -12,6 +12,7 @@ import scala.quoted.Expr.ofList
 
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int._
+import scala.compiletime.summonInline
 import scala.compiletime.constValue
 import scala.compiletime.erasedValue
 import scala.compiletime.constValueTuple
@@ -88,6 +89,7 @@ sealed trait RecordSchema:
       case EmptySchema      => this.type
       case SchemaCons[p, s] => SchemaCons[p, PrependOtherSchema[s]]
 
+  // DOESN'T WORK!
   transparent inline def prependOtherSchema[S1 <: RecordSchema](inline s1: S1): PrependOtherSchema[S1] =
     inline s1 match
       case _: EmptySchema       => 
@@ -127,7 +129,10 @@ sealed trait RecordSchema:
   transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, inline p2: P2): RecordSchema =
     replace(p1, p2)
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): RecordSchema
+  type Remove[P1<:RecordProperty0] <: RecordSchema
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type]
+
   type OptionValues = HValues[Option]
 
   transparent inline def transformOption: OptionValues => Option[Values]
@@ -166,11 +171,13 @@ case object EmptySchema extends RecordSchema:
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
     EmptySchema
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): RecordSchema =
-    EmptySchema
 
   transparent inline def transformOption: OptionValues => Option[Values] =
     _ => Some(EmptyTuple)
+
+  type Remove[P1<:RecordProperty0] = EmptySchema
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type] = EmptySchema
 
 sealed trait NonEmptySchema extends RecordSchema:
   type Properties <: NonEmptyTuple
@@ -202,8 +209,8 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
     val i = indexOfProp(p)
     _.apply(i).asInstanceOf[RecordProperty0.PropertyValueType[p.type]]////Tuple.Elem[Values, IndexOfProp[p.type]]]
     
+  // TODO: construct a tuple expression that will return result at once, without the need to reconstruct multiple tuples along the way.
   transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =
-    // val p2 = p.asInstanceOf[s1.PropertySet]
     val f2 = s1.propertyGetter(p)
     val f1: s1.Values => RecordProperty0.PropertyValueType[p.type] = 
       s1.propertyGetter(p)
@@ -217,30 +224,35 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
     inline p1 match
-      case p => p2 #: schema
-      case _ => p #: schema.replace(p1, p2)
-
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): RecordSchema =
-    inline p1 match
-      case p => schema
-      case _ => p #: schema.remove(p1)
+      case `p` => p2 #: schema
+      case _   => p #: schema.replace(p1, p2)
 
   transparent inline def transformOption: OptionValues => Option[Values] =
     val schemaTransformOption = schema.transformOption
     ov => 
       ov match
-        case None *: t => None
+        case None    *: t => None
         case Some(v) *: t =>
           val tr = schemaTransformOption(t)
           tr.map(v *: _)
+  type Remove[P1<:RecordProperty0] <: RecordSchema = 
+    P1 match
+      case P => S
+      case _ => SchemaCons[P, schema.Remove[P1]]
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type] =
+    inline p1 match
+      case _: P => schema
+      case _    => SchemaCons(p, schema.remove(p1))
+
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 
 object RecordSchema:
   type IndexOfTypeInTupleAux[T<:Tuple, A, N <: Int] <: Int = T match
     case EmptyTuple => Nothing
-    case A *: t => N
-    case _ *: t => IndexOfTypeInTupleAux[t, A, S[N]]
+    case A *: t     => N
+    case _ *: t     => IndexOfTypeInTupleAux[t, A, S[N]]
 
   type IndexOfTypeInTuple[T<:Tuple, A] = IndexOfTypeInTupleAux[T, A, 0]
 
@@ -249,14 +261,14 @@ object RecordSchema:
     case SchemaCons[p, s] => Some[(p,s)]
 
   type PropAt[X <: RecordSchema, N <: Int] <: RecordProperty0 = X match
-    case EmptySchema => Nothing
+    case EmptySchema      => Nothing
     case SchemaCons[p, s] => 
       N match
-        case 0 => p
+        case 0    => p
         case S[n] => PropAt[s, n]
 
   type ValueAt[X <: RecordSchema, N <: Int] <: Any = X match
-    case EmptySchema => Nothing
+    case EmptySchema      => Nothing
     case SchemaCons[p, s] => 
       N match
         case 0    => RecordProperty0.PropertyValueType[p]
@@ -274,7 +286,7 @@ object RecordSchema:
   /** Type of the concatenation of two schemas. */
   type Concat[X <: RecordSchema, Y <: RecordSchema] <: RecordSchema = 
     X match 
-      case EmptySchema => Y
+      case EmptySchema         => Y
       case SchemaCons[x1, xs1] => SchemaCons[x1, Concat[xs1, Y]]
  
   def empty: EmptySchema = EmptySchema
@@ -282,16 +294,31 @@ object RecordSchema:
   type TupleToSchema[T <: Tuple] <: RecordSchema =
     T match
       case EmptyTuple => EmptySchema
-      case p *: t => p #: TupleToSchema[t]
+      case p *: t     => p #: TupleToSchema[t]
 
   transparent inline def constSchema[S <: RecordSchema]: S =
     inline erasedValue[S] match
       case _: EmptySchema      => RecordSchema.empty.asInstanceOf[S]
       case _: SchemaCons[p, s] =>
-        (constValue[p] #: constSchema[s]).asInstanceOf[S]
+        (summonInline[ValueOf[p]].value #: constSchema[s]).asInstanceOf[S]
 
   transparent inline infix def prepend[S <: RecordSchema, P <: RecordProperty0](inline p: P, inline schema: S): SchemaCons[P, S] =
       SchemaCons[P, S](p, schema)
+
+  type Remove[P1 <: RecordProperty0, S <: RecordSchema] <: RecordSchema =
+    S match
+      case EmptySchema        => EmptySchema.type
+      case SchemaCons[P1, st] => st
+      case SchemaCons[pt, st] => SchemaCons[pt, Remove[P1, st]] 
+
+  // DOESN'T WORK
+  transparent inline def removeDoesntWork
+    [P1 <: RecordProperty0, S <: RecordSchema]
+    (inline p1: P1, inline schema: S): Remove[P1, S] =
+    inline schema match
+      case EmptySchema        : EmptySchema        => EmptySchema
+      case SchemaCons(`p1`, s): SchemaCons[P1, st] => s
+      case SchemaCons(p,    s): SchemaCons[pt, st] => SchemaCons(p, removeDoesntWork(p1, s))
 
 def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] = 
   Expr(a.show)

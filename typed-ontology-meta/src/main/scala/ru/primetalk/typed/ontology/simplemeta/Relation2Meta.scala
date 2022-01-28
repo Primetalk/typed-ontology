@@ -75,8 +75,8 @@ abstract class Relation2Meta[V[_]]:
 
   transparent inline def crossProductFrom[R1 <: Relation2Meta[V]](inline r1: R1)(using FlatMap[V]): Relation2Meta[V] =
     import cats.FlatMap.ops.toAllFlatMapOps
-    val schema3 = schema.prependOtherSchema(r1.schema)
-    val f: (r1.schema.Values, schema.Values) => schema3.Values = schema.prependValues(r1.schema)(schema3)
+    val schema3 = r1.schema.appendOtherSchema(schema)
+    val f: (r1.schema.Values, schema.Values) => schema3.Values = r1.schema.appendValues(schema)(schema3)
     val vals = 
       for
         row1 <- r1.rows

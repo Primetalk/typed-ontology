@@ -3,9 +3,11 @@ package ru.primetalk.typed.ontology.example3
 import ru.primetalk.typed.ontology.example1._
 import java.time.LocalDateTime
 import cats.instances._
+import ru.primetalk.typed.ontology.simplemeta.#:
 import ru.primetalk.typed.ontology.simplemeta.EmptySchema
 import ru.primetalk.typed.ontology.simplemeta.Relation2Meta
 import ru.primetalk.typed.ontology.simplemeta.SimplePropertyId
+import ru.primetalk.typed.ontology.simplemeta.RecordSchema
 
 trait TestDataRel2 extends BaseSpec:
   val product1: Product.Row = (1, "product1", BigInt(10))
@@ -44,9 +46,24 @@ class Rel2Spec extends TestDataRel2:
       (3,1,2,2,"product2", BigInt(20)),
     ))
   }
+  test("ValueOf"){
+    summon[ValueOf[Product.name.type]].value should equal(Product.name)
+  }
+  test("constSchema"){
+    type S1 =  Product.name.type #: Product.price.type #: EmptySchema
+    val s2 = Product.fields(Product.name, Product.price)
+    val s1: S1 = RecordSchema.constSchema[S1]
+    s1 should equal(s2)
+  }
+  test("Remove property from schema"){
+    val  s1 = Product.tableSchema.remove(Product.price)
+    val s2 = Product.id #: Product.name #: EmptySchema
+    s1 should equal(s2)
+  }
   test("cross product"){
     val poi = orderItems.crossProduct(products)
-    val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
+    val s = OrderItem.tableSchema.concat(Product.tableSchema.remove(Product.price))// Product.id #: Product.name #: EmptySchema)
+    // val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
     val res = poi.projection(s)
     res.rows should equal(List(
       (1,1,1,1,"product1"), 
@@ -101,3 +118,4 @@ class Rel2Spec extends TestDataRel2:
   test("Expenses report"){
 
   }
+    
