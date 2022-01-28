@@ -27,12 +27,11 @@ object OrderItem extends TableBuilder:
   // val productId = Product.id// does not work well with toString
 
   type TableSchema = id.type #: orderId.type #: productId.type #: EmptySchema
-  // val tableSchema: TableSchema = RecordSchema.constSchema[TableSchema]
-  val tableSchema = tupleToSchema((id, orderId, productId))
+  val tableSchema = infer[TableSchema]
   // val tableSchema: TableSchema = id #: orderId #: productId #: EmptySchema 
 
   type SmallerSchema = id.type #: orderId.type #: EmptySchema
-  val smallerSchema: SmallerSchema = id #: orderId #: EmptySchema
+  val smallerSchema: SmallerSchema = infer[SmallerSchema]
 
   lazy val orderIdFk   = orderId.foreignKey(Order.id)
   lazy val productIdFk = productId.foreignKey(Product.id)
