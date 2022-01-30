@@ -167,6 +167,8 @@ abstract class Relation2Meta[V[_]]:
     new Semigroup[A]:
       def combine(a: A, b: A): A = combineImpl(a,b)
 
+
+
   transparent inline def groupMapReduceS[
     KeySchema <: RecordSchema,
     AggregateSchema <: RecordSchema
@@ -175,23 +177,83 @@ abstract class Relation2Meta[V[_]]:
     inline keySchema: KeySchema,
     inline aggregateSchema: AggregateSchema
     )(
-    inline resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type]
-    )(
       inline k: Row => keySchema.Values,
       inline m: Row => aggregateSchema.Values
     )(using Order[keySchema.Values])
-    (using Semigroup[aggregateSchema.Values])
+    (using Semigroup[aggregateSchema.Values])// to aggregate values, something like `sum`
     (using MonoidK[V])
     (using Applicative[V])
-    (using Foldable[V]): Relation2Meta[V]{
-      type Schema = resultSchema.type
-    } = 
+    (using Foldable[V])
+    // : Relation2Meta[V]{
+    //   // type Schema = resultSchema.type
+    // }
+     = 
+      // (
+      val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
+      // )
       val grouped = groupMapReduce[keySchema.Values, aggregateSchema.Values](k)(m)
-      val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
-      val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
-      import cats.MonoidK.ops.toAllMonoidKOps
-      val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])((b, a) => b <+> Applicative[V].pure(a))
-      Relation2Meta.apply(resultSchema)(vals)
+
+      convertSortedMapToRelation(keySchema, aggregateSchema)(grouped)
+      // val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
+      // // concat
+      // val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
+      // import cats.MonoidK.ops.toAllMonoidKOps
+      // val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])((b, a) => b <+> Applicative[V].pure(a))
+      // Relation2Meta.apply(resultSchema)(vals)
+transparent inline def convertSortedMapToRelation[
+  V[_],
+  KeySchema <: RecordSchema,
+  AggregateSchema <: RecordSchema
+  // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
+  ](
+  inline keySchema: KeySchema,
+  inline aggregateSchema: AggregateSchema
+  )
+  (grouped: SortedMap[keySchema.Values, aggregateSchema.Values])
+  (using Order[keySchema.Values])
+  (using Semigroup[aggregateSchema.Values])// to aggregate values, something like `sum`
+  (using MonoidK[V])
+  (using Applicative[V])
+  (using Foldable[V])
+  // : Relation2Meta[V]{
+  //   // type Schema = resultSchema.type
+  // }
+    = 
+    val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
+    val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
+    // concat
+    val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
+    val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
+      (b, a) => 
+      MonoidK[V].combineK(b, Applicative[V].pure(a)))
+    Relation2Meta.apply(resultSchema)(vals)
+transparent inline def convertSortedMapToV[
+  V[_],
+  KeySchema <: RecordSchema,
+  AggregateSchema <: RecordSchema
+  // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
+  ](
+  inline keySchema: KeySchema,
+  inline aggregateSchema: AggregateSchema
+  )
+  (grouped: SortedMap[keySchema.Values, aggregateSchema.Values])
+  (using Order[keySchema.Values])
+  (using Semigroup[aggregateSchema.Values])// to aggregate values, something like `sum`
+  (using MonoidK[V])
+  (using Applicative[V])
+  (using Foldable[V])
+  // : Relation2Meta[V]{
+  //   // type Schema = resultSchema.type
+  // }
+    = 
+    val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
+    val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
+    // concat
+    val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
+    val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
+      (b, a) => 
+      MonoidK[V].combineK(b, Applicative[V].pure(a)))
+    vals
 
 object Relation2Meta:
   transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =
@@ -203,3 +265,10 @@ object Relation2Meta:
 
   transparent inline def empty[S1 <: RecordSchema, V[_]](inline s1: S1)(using MonoidK[V]) =
     apply(s1)(MonoidK[V].empty)
+
+  type RelationOf[S <: RecordSchema] = [V[_]] =>> Relation2Meta[V] {
+      type Schema = S
+  }
+  type RelationOfV[V[_]] = [S <: RecordSchema] =>> Relation2Meta[V] {
+      type Schema = S
+  }

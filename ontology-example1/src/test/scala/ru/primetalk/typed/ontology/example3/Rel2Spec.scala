@@ -1,23 +1,28 @@
 package ru.primetalk.typed.ontology.example3
 
-import ru.primetalk.typed.ontology.example1._
+import ru.primetalk.typed.ontology.example1.{Product, Order, OrderItem}
 import java.time.LocalDateTime
-import cats.instances._
+// import cats.instances._
 import ru.primetalk.typed.ontology.simplemeta.#:
 import ru.primetalk.typed.ontology.simplemeta.EmptySchema
 import ru.primetalk.typed.ontology.simplemeta.Relation2Meta
+import ru.primetalk.typed.ontology.simplemeta.convertSortedMapToRelation
+import ru.primetalk.typed.ontology.simplemeta.convertSortedMapToV
 import ru.primetalk.typed.ontology.simplemeta.SimplePropertyId
 import ru.primetalk.typed.ontology.simplemeta.RecordSchema
+import scala.collection.immutable.SortedMap
+import cats.MonoidK
+import cats.Applicative
 
 trait TestDataRel2 extends BaseSpec:
-  val product1: Product.Row = (1, "product1", BigInt(10))
+  val product1: Product.Row = (1, "product1", BigInt(5))
   val product2: Product.Row = (2, "product2", BigInt(20))
   val products = Product.relation2(List(product1, product2))
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
   val orders = Order.relation2(List(order1))
-  val orderItem1: OrderItem.Row = (1,1,1)
-  val orderItem2: OrderItem.Row = (2,1,1)
-  val orderItem3: OrderItem.Row = (3,1,2)
+  val orderItem1: OrderItem.Row = (1,1,product1(0))
+  val orderItem2: OrderItem.Row = (2,1,product1(0))
+  val orderItem3: OrderItem.Row = (3,1,product2(0))
   val orderItems = OrderItem.relation2(List(orderItem1,orderItem2, orderItem3))
 
 class Rel2Spec extends TestDataRel2:
@@ -38,11 +43,11 @@ class Rel2Spec extends TestDataRel2:
   test("cross product from"){
     val poi = products.crossProductFrom(orderItems)
     poi.rows should equal(List(
-      (1,1,1,1,"product1", BigInt(10)), 
+      (1,1,1,1,"product1", BigInt(5)), 
       (1,1,1,2,"product2", BigInt(20)), 
-      (2,1,1,1,"product1", BigInt(10)), 
+      (2,1,1,1,"product1", BigInt(5)), 
       (2,1,1,2,"product2", BigInt(20)), 
-      (3,1,2,1,"product1", BigInt(10)), 
+      (3,1,2,1,"product1", BigInt(5)), 
       (3,1,2,2,"product2", BigInt(20)),
     ))
   }
@@ -62,7 +67,8 @@ class Rel2Spec extends TestDataRel2:
   }
   test("cross product"){
     val poi = orderItems.crossProduct(products)
-    val s = OrderItem.tableSchema.concat(Product.tableSchema.remove(Product.price))// Product.id #: Product.name #: EmptySchema)
+    val withoutPrice = Product.tableSchema.remove(Product.price)
+    val s = OrderItem.tableSchema.concat(withoutPrice)// Product.id #: Product.name #: EmptySchema)
     // val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
     val res = poi.projection(s)
     res.rows should equal(List(
@@ -114,8 +120,81 @@ class Rel2Spec extends TestDataRel2:
     val p = Relation2Meta.empty[OrderItem.tableSchema.type, List](OrderItem.tableSchema)
     p.rows shouldBe empty
   }
+  object sumPrice extends Product.column[BigInt]
+  given ordering: Ordering[Tuple1[String]] = cats.kernel.Order[Tuple1[String]].toOrdering
 
-  test("Expenses report"){
+  test("Expenses report with a simple groupMapReduce"){
+    // SELECT product.name, sum(product.price) 
+    // FROM order_item JOIN product ON order_item.product_id = product.id
+    // WHERE order_item.order_id = ?
+    def expensesReport[V[_], 
+      P <: products.Self,
+      OI <: orderItems.Self,
+      ](product: P, orderItem: OI) = 
+        val prod = product.crossProduct(orderItem)
+        val joined = prod.filter(row => 
+          prod.schema.propertyGetter(Product.id)(row) == 
+            prod.schema.propertyGetter(OrderItem.productId)(row) )
+        val keySchema = Product.name #: EmptySchema
+        val aggregateSchema = sumPrice #: EmptySchema
+        val aggregateISchema = Product.price #: EmptySchema
+        // val resultSchema = keySchema.concat(aggregateSchema)
+        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
+        val reduced1 = joined.groupMapReduce(keyF)(priceAsSumPrice)
+        reduced1 should equal(SortedMap(
+          Tuple1("product1") -> Tuple1(BigInt(10)), 
+          Tuple1("product2") -> Tuple1(BigInt(20))
+        ))
+        reduced1
+        // val reduced = joined.groupMapReduceS(keySchema, aggregateSchema)(
+        //   keyF,
+        //   priceAsSumPrice,
+        // )
+        // reduced should equal(List())
 
+    val result = expensesReport(products, orderItems)
+    result should equal(SortedMap(
+      Tuple1("product1") -> Tuple1(BigInt(10)), 
+      Tuple1("product2") -> Tuple1(BigInt(20))
+    ))
   }
-    
+
+  test("Expenses report with a schema-based groupMapReduceS"){
+    // SELECT product.name, sum(product.price) 
+    // FROM order_item JOIN product ON order_item.product_id = product.id
+    // WHERE order_item.order_id = ?
+    def expensesReport[V[_], 
+      P <: products.Self,
+      OI <: orderItems.Self,
+      ](product: P, orderItem: OI) = 
+        val prod = product.crossProduct(orderItem)
+        val joined = prod.filter(row => 
+          prod.schema.propertyGetter(Product.id)(row) == 
+            prod.schema.propertyGetter(OrderItem.productId)(row) )
+        val keySchema = Product.name #: EmptySchema
+        val aggregateSchema = sumPrice #: EmptySchema
+        val aggregateISchema = Product.price #: EmptySchema
+        val resultSchema = keySchema.concat(aggregateSchema)
+        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
+        val reduced1 = joined.groupMapReduce(keyF)(priceAsSumPrice)
+        reduced1 should equal(SortedMap(
+          Tuple1("product1") -> Tuple1(BigInt(10)), 
+          Tuple1("product2") -> Tuple1(BigInt(20))
+        ))
+        // convertSortedMapToRelation[List, keySchema.type, aggregateSchema.type](keySchema, aggregateSchema)(reduced1)
+        // val vals = convertSortedMapToV[List, keySchema.type, aggregateSchema.type](keySchema, aggregateSchema)(reduced1)
+        val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
+        // concat
+        val allVals: Iterable[resultSchema.Values] = reduced1.toIterable.map(concat(_, _))
+        import cats.MonoidK.ops.toAllMonoidKOps
+        val vals = allVals.foldLeft(MonoidK[List].empty[resultSchema.Values])((b, a) => b <+> Applicative[List].pure(a))
+        Relation2Meta.apply(resultSchema)(vals)
+
+    val result = expensesReport(products, orderItems)
+    result.rows should equal(List(
+      ("product1", BigInt(10)),
+      ("product2", BigInt(20)),
+    ))
+  }

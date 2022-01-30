@@ -72,7 +72,8 @@ sealed trait RecordSchema:
     scala.runtime.Tuples.apply(v.asInstanceOf[NonEmptyTuple], i)
 
   /** Concatenates properties of another schema. */
-  transparent inline def concat[S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[this.type, schema2.type] =
+  // transparent inline def concat[S2 <: RecordSchema, This >: this.type <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
+  inline def concat[S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[this.type, schema2.type] =
     inline this match
       case _: EmptySchema => 
         schema2
@@ -80,8 +81,17 @@ sealed trait RecordSchema:
         sc.p #: sc.schema.concat(schema2)
 
   transparent inline def concatValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: RecordSchema.Concat[this.type, schema2.type]): (Values, schema2.Values) => schema3.Values = 
-    (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
+      (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
+  // transparent inline def concatValues[S2 <: RecordSchema](inline schema2: S2) = new {
+  //   type S3T = RecordSchema.Concat[self.type, schema2.type]
+  //   // val resultS 
+  //   transparent inline def apply[S3 <: S3T](inline schema3: S3): (Values, schema2.Values) => schema3.Values = 
+  //     (v1: Values, v2: schema2.Values) => (v1 ++ v2).asInstanceOf[schema3.Values]
+  // }
+  // transparent inline def concatValues[S2 <: RecordSchema/*, This >: this.type <: RecordSchema, S3 <: RecordSchema.Concat[This, S2]*/](inline schema2: S2)= //(inline schema3: S3) = //: (Values, schema2.Values) => schema3.Values = 
+  //   val resultS = concat(schema2)
+  //   (v1: Values, v2: schema2.Values) => (v1 ++ v2).asInstanceOf[resultS.Values]
 
   /** Type of the concatenation of two schemas. */
   type PrependOtherSchema[S1 <: RecordSchema] <: RecordSchema = 
