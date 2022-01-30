@@ -168,14 +168,14 @@ abstract class Relation2Meta[V[_]]:
       def combine(a: A, b: A): A = combineImpl(a,b)
 
 
-
   transparent inline def groupMapReduceS[
     KeySchema <: RecordSchema,
     AggregateSchema <: RecordSchema
-    // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
     ](
     inline keySchema: KeySchema,
     inline aggregateSchema: AggregateSchema
+    )(
+      inline resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type],//inline schema3: RecordSchema.Concat[this.type, schema2.type]
     )(
       inline k: Row => keySchema.Values,
       inline m: Row => aggregateSchema.Values
@@ -189,11 +189,11 @@ abstract class Relation2Meta[V[_]]:
     // }
      = 
       // (
-      val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
+      // val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
       // )
       val grouped = groupMapReduce[keySchema.Values, aggregateSchema.Values](k)(m)
 
-      convertSortedMapToRelation(keySchema, aggregateSchema)(grouped)
+      convertSortedMapToRelation(keySchema, aggregateSchema)(resultSchema)(grouped)
       // val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
       // // concat
       // val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
@@ -203,30 +203,31 @@ abstract class Relation2Meta[V[_]]:
 transparent inline def convertSortedMapToRelation[
   V[_],
   KeySchema <: RecordSchema,
-  AggregateSchema <: RecordSchema
+  AggregateSchema <: RecordSchema,
   // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
   ](
   inline keySchema: KeySchema,
-  inline aggregateSchema: AggregateSchema
-  )
-  (grouped: SortedMap[keySchema.Values, aggregateSchema.Values])
+  inline aggregateSchema: AggregateSchema,
+  )(
+    inline resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type],//inline schema3: RecordSchema.Concat[this.type, schema2.type]
+  )(
+    grouped: SortedMap[keySchema.Values, aggregateSchema.Values])
   (using Order[keySchema.Values])
   (using Semigroup[aggregateSchema.Values])// to aggregate values, something like `sum`
   (using MonoidK[V])
   (using Applicative[V])
   (using Foldable[V])
-  // : Relation2Meta[V]{
-  //   // type Schema = resultSchema.type
-  // }
+  : Relation2Meta[V]{
+    type Schema = resultSchema.type
+  }
     = 
-    val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
     val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
-    // concat
     val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
-    val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
+    val vals: V[resultSchema.Values] = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
       (b, a) => 
       MonoidK[V].combineK(b, Applicative[V].pure(a)))
-    Relation2Meta.apply(resultSchema)(vals)
+    Relation2Meta.apply[RecordSchema.Concat[keySchema.type, aggregateSchema.type], V](resultSchema)(vals)
+    
 transparent inline def convertSortedMapToV[
   V[_],
   KeySchema <: RecordSchema,
@@ -248,7 +249,6 @@ transparent inline def convertSortedMapToV[
     = 
     val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
     val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
-    // concat
     val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
     val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
       (b, a) => 

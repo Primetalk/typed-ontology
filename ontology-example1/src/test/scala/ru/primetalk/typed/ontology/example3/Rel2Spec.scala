@@ -160,7 +160,7 @@ class Rel2Spec extends TestDataRel2:
     ))
   }
 
-  test("Expenses report with a schema-based groupMapReduceS"){
+  test("Expenses report with a groupMapReduce and then schema-based transformation"){
     // SELECT product.name, sum(product.price) 
     // FROM order_item JOIN product ON order_item.product_id = product.id
     // WHERE order_item.order_id = ?
@@ -197,4 +197,54 @@ class Rel2Spec extends TestDataRel2:
       ("product1", BigInt(10)),
       ("product2", BigInt(20)),
     ))
+  }
+  test("Expenses report with a schema-based groupMapReduceS"){
+    // SELECT product.name, sum(product.price) 
+    // FROM order_item JOIN product ON order_item.product_id = product.id
+    // WHERE order_item.order_id = ?
+    def expensesReport[V[_], 
+      P <: products.Self,
+      OI <: orderItems.Self,
+      ](product: P, orderItem: OI, orderId: Order.id.P) = 
+        val prod = product.crossProduct(
+          orderItem
+            .filter(row => orderItem.schema.propertyGetter(OrderItem.orderId)(row) == orderId)
+        )
+        // TODO: DSL for predicates that use columns Product.id === OrderItem.productId
+        val joined = prod
+          .filter(row => 
+            prod.schema.propertyGetter(Product.id)(row) == 
+              prod.schema.propertyGetter(OrderItem.productId)(row) )
+          
+        val keySchema = Product.name #: EmptySchema
+        // val aggregateSchema = sumPrice #: EmptySchema
+        val aggregateISchema = Product.price #: EmptySchema
+        val resultSchema = keySchema.concat(aggregateISchema)
+        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        reduced1
+
+    val result = expensesReport(products, orderItems, 1)
+    result.rows should equal(List(
+      ("product1", BigInt(10)),
+      ("product2", BigInt(20)),
+    ))
+  }
+  test("Expense report DSL"){
+    def expensesReport[V[_], 
+      P <: products.Self,
+      OI <: orderItems.Self,
+      ](product: P, orderItem: OI, orderIdValue: Order.id.P) = 
+        // SELECT product.name, sum(product.price) 
+        // FROM order_item JOIN product ON order_item.product_id = product.id
+        // WHERE order_item.order_id = ?
+
+        // SELECT * FROM order_item WHERE order_item.order_id = ?
+        
+        val itemsForOrderId = {
+          import OrderItem._
+          orderItem.filter(row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+        }
+        ???
   }
