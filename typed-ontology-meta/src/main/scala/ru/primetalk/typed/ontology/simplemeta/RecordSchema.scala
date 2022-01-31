@@ -149,6 +149,10 @@ sealed trait RecordSchema:
      
   type EitherValues[E] = HValues[[V] =>> Either[E, V]]
 
+  transparent inline def fkPredicate[FK <: ForeignKeyId0](inline fk: FK): Values => Boolean = 
+    val l = propertyGetter(fk.left)
+    val r = propertyGetter(fk.right)
+    row => l(row) == r(row)
 
 type EmptySchema = EmptySchema.type
 

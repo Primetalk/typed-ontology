@@ -269,3 +269,37 @@ class Rel2Spec extends TestDataRel2:
       ("product2", BigInt(20)),
     ))
   }
+  test("Expense report with join"){
+    def expensesReport[V[_], 
+      P <: products.Self,
+      OI <: orderItems.Self,
+      ](product: P, orderItem: OI, orderIdValue: Order.id.P) = 
+        // SELECT product.name, sum(product.price) 
+        // FROM order_item JOIN product ON order_item.product_id = product.id
+        // WHERE order_item.order_id = ?
+
+        // SELECT * FROM order_item WHERE order_item.order_id = ?
+        
+        val itemsForOrderId = {
+          import OrderItem._
+          import orderItem._
+          filter(rowFun(prop(orderId) === Value(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          //tagless doesn't work yet... orderItem.filter(orderItem.expr[Boolean]([E[_]] => (e: orderItem.TaglessDsl[E]) => e.value(true)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+        }
+        val joined = product.join(OrderItem.productIdFk)(itemsForOrderId)
+        
+        val keySchema = Product.name #: EmptySchema
+        // val aggregateSchema = sumPrice #: EmptySchema
+        val aggregateISchema = Product.price #: EmptySchema
+        val resultSchema = keySchema.concat(aggregateISchema)
+        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        reduced1
+
+    val result = expensesReport(products, orderItems, 1)
+    result.rows should equal(List(
+      ("product1", BigInt(10)),
+      ("product2", BigInt(20)),
+    ))
+  }

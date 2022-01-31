@@ -35,9 +35,9 @@ projections, and other operations of relational algebra.
 //       DONE: projection Π
 //       DONE: rename (ρ)
 //       DONE: cross product, 
-//       join,
-//       Natural join (⋈)
-//         on foreign key
+//       DONE: join on foreign key
+//       x Natural join (⋈)
+//        
 // DONE: collection operations:
 //       DONE: set union,
 //       DONE: set difference? - via replaceRows
@@ -97,6 +97,23 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
         f(row1, row2)
     Relation2Meta[schema3.type, V](schema3)(vals)
 
+  transparent inline def join[FK <: ForeignKeyId0, R2 <: Relation2Meta[V]](inline fk: FK)(inline r2: R2)(using FlatMap[V])(using FunctorFilter[V]) = 
+    import cats.FlatMap.ops.toAllFlatMapOps
+    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    val schema3 = schema.appendOtherSchema(r2.schema)
+    val f: (schema.Values, r2.schema.Values) => schema3.Values = schema.appendValues(r2.schema)(schema3)
+    val pred: schema3.Values => Boolean = schema3.fkPredicate(fk)
+    val vals = 
+      for
+        row1 <- this.rows
+        row2 <- r2.rows
+        row3 = f(row1, row2)
+        // if pred(row3)
+      yield
+        row3
+    val filtered = vals.filter(pred)
+    Relation2Meta[schema3.type, V](schema3)(filtered)
+
   transparent inline def prependCalcColumn[P <: RecordProperty0](inline p: P)(inline f: Row => p.P)(using FlatMap[V]) =
     import cats.FlatMap.ops.toAllFlatMapOps
     val schema3 = p #: schema
@@ -119,6 +136,10 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
     Relation2Meta(schema)(f(rows))
 
   transparent inline def filter(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
+    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    replaceRows(_.filter(predicate))
+  // TODO: try optimizing withFilter
+  transparent inline def withFilter(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
     import cats.FunctorFilter.ops.toAllFunctorFilterOps
     replaceRows(_.filter(predicate))
 
