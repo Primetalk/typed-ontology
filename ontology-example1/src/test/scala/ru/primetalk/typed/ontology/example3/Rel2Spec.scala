@@ -231,7 +231,7 @@ class Rel2Spec extends TestDataRel2:
       ("product2", BigInt(20)),
     ))
   }
-  test("Expense report DSL"){
+  test("Expense report with a classic DSL"){
     def expensesReport[V[_], 
       P <: products.Self,
       OI <: orderItems.Self,
@@ -244,7 +244,28 @@ class Rel2Spec extends TestDataRel2:
         
         val itemsForOrderId = {
           import OrderItem._
-          orderItem.filter(row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          import orderItem._
+          filter(rowFun(prop(orderId) === Value(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          //tagless doesn't work yet... orderItem.filter(orderItem.expr[Boolean]([E[_]] => (e: orderItem.TaglessDsl[E]) => e.value(true)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
         }
-        ???
+        val prod = product.crossProduct(itemsForOrderId)
+        // DONE: DSL for predicates that use columns Product.id === OrderItem.productId
+        val joined = {
+          import prod._
+          filter(rowFun(prop(Product.id) === prop(OrderItem.productId)))
+        }
+        val keySchema = Product.name #: EmptySchema
+        // val aggregateSchema = sumPrice #: EmptySchema
+        val aggregateISchema = Product.price #: EmptySchema
+        val resultSchema = keySchema.concat(aggregateISchema)
+        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        reduced1
+
+    val result = expensesReport(products, orderItems, 1)
+    result.rows should equal(List(
+      ("product1", BigInt(10)),
+      ("product2", BigInt(20)),
+    ))
   }

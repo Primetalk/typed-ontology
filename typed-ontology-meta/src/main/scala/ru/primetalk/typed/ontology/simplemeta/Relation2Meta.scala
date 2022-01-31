@@ -46,7 +46,7 @@ projections, and other operations of relational algebra.
 // DONE: groupBy, groupMapReduce
 // TODO: sql-style grouping + aggregate (with on-the-fly schema construction)
 
-abstract class Relation2Meta[V[_]]:
+abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
   self =>
   
   type Schema <: RecordSchema
