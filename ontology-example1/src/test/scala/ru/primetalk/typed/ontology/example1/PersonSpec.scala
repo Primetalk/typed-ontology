@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology.example1
 
 import org.junit.Test
-import ru.primetalk.typed.ontology.simplemeta._
+import ru.primetalk.typed.ontology.simple.meta._
 import ru.primetalk.typed.ontology.Record
 
 class PersonSpec:

@@ -1,4 +1,4 @@
-package ru.primetalk.typed.ontology.simplemeta
+package ru.primetalk.typed.ontology.simple.meta
 
 import scala.reflect.ClassTag
 import ru.primetalk.typed.ontology.Record

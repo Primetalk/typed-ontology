@@ -64,12 +64,20 @@ lazy val typedOntologyMeta = project
   .dependsOn(typedOntologyMetaMeta)
   .settings(commonSettings :_*)
 
+lazy val typedOntologySimpleMeta = project
+  .in(file("typed-ontology-simple-meta"))
+  .settings(
+    name := "typed-ontology-simple-meta",
+  )
+  .dependsOn(typedOntologyMetaMeta)
+  .settings(commonSettings :_*)
+
 lazy val ontologyExample1 = project
   .in(file("ontology-example1"))
   .settings(
     name := "ontology-example1",
   )
   .dependsOn(
-    typedOntologyMeta
+    typedOntologySimpleMeta
   )
   .settings(commonSettings :_*)

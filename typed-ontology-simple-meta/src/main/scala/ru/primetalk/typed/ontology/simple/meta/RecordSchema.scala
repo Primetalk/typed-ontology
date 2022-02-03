@@ -1,9 +1,9 @@
 /**
-  * Package `simplemeta2` contains definitions that are used to express ontology.
+  * Package `simple.meta` contains definitions that are used to express ontology.
   * For instance, here we define PropertyId class that represent a property description.
   * We might want to put any additional metainformation in it. For example,
   */
-package ru.primetalk.typed.ontology.simplemeta
+package ru.primetalk.typed.ontology.simple.meta
 
 import scala.language.higherKinds
 import ru.primetalk.typed.ontology.Record

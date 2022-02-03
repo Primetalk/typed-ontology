@@ -1,4 +1,4 @@
-package ru.primetalk.typed.ontology.simplemeta
+package ru.primetalk.typed.ontology.simple.meta
 
 // import cats.Map
 import cats.Functor

@@ -3,13 +3,13 @@ package ru.primetalk.typed.ontology.example3
 import ru.primetalk.typed.ontology.example1.{Product, Order, OrderItem}
 import java.time.LocalDateTime
 // import cats.instances._
-import ru.primetalk.typed.ontology.simplemeta.#:
-import ru.primetalk.typed.ontology.simplemeta.EmptySchema
-import ru.primetalk.typed.ontology.simplemeta.Relation2Meta
-import ru.primetalk.typed.ontology.simplemeta.convertSortedMapToRelation
-import ru.primetalk.typed.ontology.simplemeta.convertSortedMapToV
-import ru.primetalk.typed.ontology.simplemeta.SimplePropertyId
-import ru.primetalk.typed.ontology.simplemeta.RecordSchema
+import ru.primetalk.typed.ontology.simple.meta.#:
+import ru.primetalk.typed.ontology.simple.meta.EmptySchema
+import ru.primetalk.typed.ontology.simple.meta.Relation2Meta
+import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToRelation
+import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToV
+import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
+import ru.primetalk.typed.ontology.simple.meta.RecordSchema
 import scala.collection.immutable.SortedMap
 import cats.MonoidK
 import cats.Applicative

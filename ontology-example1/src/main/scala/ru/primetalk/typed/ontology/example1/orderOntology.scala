@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.example1
 
-import ru.primetalk.typed.ontology.simplemeta._
+import ru.primetalk.typed.ontology.simple.meta._
 import ru.primetalk.typed.ontology.Record
 import java.time.LocalDateTime
 
