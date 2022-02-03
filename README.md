@@ -4,12 +4,29 @@ Typed ontology
 Typed ontology is a principled approach to model various domains with emphasis on the properties rather than data storage.
 
 We work with the following abstraction layers:
-- application - actual code that work with data;
-- schema - part of application that describes the data structure, object/properties//table/columns//entities/attributes, relations between entities.
-- meta - part of application, that specifies actual instruments that
-will be used in schema definition - methods for defining entities, methods for dealing with types, methods for defining attributes and relations; There is also `simple-meta` that shows an example of how to define properties that are identified by names.
-- meta-meta - part of typed-ontology library (which could be customized), that provides foundation for `meta`. Mostly - type classes and macroses 
-to facilitate meta definition.
+- **application** - actual code that work with data;
+- **schema** - part of an application that describes the data structure, object/properties//table/columns//entities/attributes, relations between entities.
+schema + data together makes up an "ontology". 
+However, within this library we consider only schema to be an ontology. 
+The data ("instances") is usually a different thing.
+This same level is sometimes referred to as "metadata", but we reserve this term and only use "ontology".
+- **meta** - part of application, that specifies actual instruments that
+will be used in schema definition - methods for defining entities/classes, methods for dealing with types, methods for defining attributes/properties and relations;
+  - **simple-meta** project that shows an example of how to define properties that are identified by names. For many applications this simple meta might be enough.
+  - For some applications it's required to preserve additional information about properties, for example, database types or serialization/deserialization attributes.
+- **meta-tools** - part of typed-ontology library (which could be customized), that provides foundation for `meta`. Mostly - base classes, type classes, macroses to facilitate meta definition.
+
+## Records, attributes and schemas
+
+We use term **record** when we talk about an ontology class or a relational "relation"/"table".
+Mainly because the word "class" is already used in the underlying language.
+
+A **record** has **attributes** or **properties** or **columns**. We use these terms interchangingly.
+An instance or a **record** may have some **values** of it's **attributes**.
+The collection of attributes of an instance is determined by it's **schema**.
+
+For example, an entity `A` may have attributes `a`, `b`, `c`. And we can create a few *schemas* for the same entity - 
+`(a,b)`, `(a)`, `(a,b,c)`. We may even talk about a schema that spans a few entities - `(A.a, A.b, B.a)`.
 
 ## Primer
 
@@ -43,6 +60,8 @@ To keep more property values we may have a collection of pairs, or use typed-map
     val alice: TypedMap[Person]
     val name = alice.get(person.name) // : Option[String]
 
+Alternatively, we can use tuple of values and corresponding tuple of properties.
+
 Separation of data structure (schema) from actual data storage allows us to easily use 
 alternative data representations. For example, we may represent our data directly
 as json (see `typed-ontology-json` subproject).
@@ -66,3 +85,20 @@ In `updated` event we might only keep information about the fields that were act
 We may have the same information represented in different formats. 
 And we'd rather keep core schema definition in a central place.
 We should be able to represent conversion mapping using individual format definitions.
+
+### SQL-style operations
+
+Queries, joins and projections should be possible in typed-ontology.
+
+## Relational algebra
+
+One of the interesting ways of developing ontologies is implementing relational algebra based on ontology.
+
+A **relation** is a **schema** + a collection of instances for that schema:
+
+```
+R: <S, V[s]>
+```
+
+Particular implementation of storage for instances could be a collection, a stream or something else of kind `* -> *`.
+
