@@ -13,47 +13,18 @@ import cats.kernel.Order
 import scala.collection.immutable.SortedMap
 import cats.Applicative
 
-/*
-- Cartesian product, 
-- join, 
-- projection and 
-- selection are implemented.
-
-A generic representation might be a 
-- Map[String, Any], 
-- a tuple with appropriate values, 
-- a tuple of Options, 
-- a tuple of Eithers, … 
-- conversion becomes error free, straight-forward and fully automated.  
-This opens a path to implement 
-Cartesian products, 
-projections, and other operations of relational algebra. 
-
-*/
-
-// TODO: specific relational algebra operations:
-//       DONE: projection Π
-//       DONE: rename (ρ)
-//       DONE: cross product, 
-//       DONE: join on foreign key
-//       x Natural join (⋈)
-//        
-// DONE: collection operations:
-//       DONE: set union,
-//       DONE: set difference? - via replaceRows
-//       DONE: selection σ (filtering)
-// DONE: calculate columns
-// DONE: groupBy, groupMapReduce
-// TODO: sql-style grouping + aggregate (with on-the-fly schema construction)
-
-abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
+/**
+ * Relation is a pair of schema and a collection of instances of that schema.
+ * V - is the collection type (List, Stream[...]).
+ */
+abstract class Relation[V[_]] extends PredicateClassicDsl:
   self =>
   
   type Schema <: RecordSchema
   val schema: Schema
   type Row = schema.Values
   val rows: V[schema.Values]
-  type Self = Relation2Meta[V] {
+  type Self = Relation[V] {
     type Schema = self.Schema
     type Row = self.Row
   }
@@ -71,9 +42,9 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
     import cats.Functor.ops.toAllFunctorOps
     val f = s2.projectorFrom(schema)
     val vals = rows.map(f)
-    Relation2Meta(s2)(vals)
+    Relation(s2)(vals)
 
-  transparent inline def crossProductFrom[R1 <: Relation2Meta[V]](inline r1: R1)(using FlatMap[V]): Relation2Meta[V] =
+  transparent inline def crossProductFrom[R1 <: Relation[V]](inline r1: R1)(using FlatMap[V]): Relation[V] =
     import cats.FlatMap.ops.toAllFlatMapOps
     val schema3 = r1.schema.appendOtherSchema(schema)
     val f: (r1.schema.Values, schema.Values) => schema3.Values = r1.schema.appendValues(schema)(schema3)
@@ -83,9 +54,9 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
         row2 <- this.rows
       yield
         f(row1, row2)
-    Relation2Meta(schema3)(vals)
+    Relation(schema3)(vals)
 
-  transparent inline def crossProduct[R2 <: Relation2Meta[V]](inline r2: R2)(using FlatMap[V]) =
+  transparent inline def crossProduct[R2 <: Relation[V]](inline r2: R2)(using FlatMap[V]) =
     import cats.FlatMap.ops.toAllFlatMapOps
     val schema3 = schema.appendOtherSchema(r2.schema)
     val f: (schema.Values, r2.schema.Values) => schema3.Values = schema.appendValues(r2.schema)(schema3)
@@ -95,9 +66,9 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
         row2 <- r2.rows
       yield
         f(row1, row2)
-    Relation2Meta[schema3.type, V](schema3)(vals)
+    Relation[schema3.type, V](schema3)(vals)
 
-  transparent inline def join[FK <: ForeignKeyId0, R2 <: Relation2Meta[V]](inline fk: FK)(inline r2: R2)(using FlatMap[V])(using FunctorFilter[V]) = 
+  transparent inline def join[FK <: ForeignKeyId0, R2 <: Relation[V]](inline fk: FK)(inline r2: R2)(using FlatMap[V])(using FunctorFilter[V]) = 
     import cats.FlatMap.ops.toAllFlatMapOps
     import cats.FunctorFilter.ops.toAllFunctorFilterOps
     val schema3 = schema.appendOtherSchema(r2.schema)
@@ -112,28 +83,28 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
       yield
         row3
     val filtered = vals.filter(pred)
-    Relation2Meta[schema3.type, V](schema3)(filtered)
+    Relation[schema3.type, V](schema3)(filtered)
 
   transparent inline def prependCalcColumn[P <: RecordProperty0](inline p: P)(inline f: Row => p.P)(using FlatMap[V]) =
     import cats.FlatMap.ops.toAllFlatMapOps
     val schema3 = p #: schema
     val vals = rows.map(row => (f(row) *: row).asInstanceOf[schema3.Values])
-    Relation2Meta(schema3)(vals)
+    Relation(schema3)(vals)
 
   transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, p2: P2)(using Functor[V]) =
     val schema3 = schema.rename(p1, p2)
     val vals = rows.asInstanceOf[V[schema3.Values]] // to avoid iteration and map
-    Relation2Meta[schema3.type, V](schema3)(vals)
+    Relation[schema3.type, V](schema3)(vals)
 
-  transparent inline def ++[R2 <: Relation2Meta[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using SemigroupK[V])(using Functor[V]) =
+  transparent inline def ++[R2 <: Relation[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using SemigroupK[V])(using Functor[V]) =
     import cats.syntax.all.toSemigroupKOps
     // val vals = rows <+> r2.rows.map(ev)
     // to avoid iteration and map we cast:
     val vals = rows <+> r2.rows.asInstanceOf[V[schema.Values]] // to avoid iteration and map
-    Relation2Meta(schema)(vals)
+    Relation(schema)(vals)
 
   transparent inline def replaceRows(inline f: V[Row] => V[Row]) =
-    Relation2Meta(schema)(f(rows))
+    Relation(schema)(f(rows))
 
   transparent inline def filter(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
     import cats.FunctorFilter.ops.toAllFunctorFilterOps
@@ -148,7 +119,7 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
     replaceRows(_.filterNot(predicate))
 
   /** NB: O(N + M ln M), N = rows.size, M = R2.rows.size */
-  transparent inline def --[R2 <: Relation2Meta[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using Foldable[V])(using FunctorFilter[V]) =
+  transparent inline def --[R2 <: Relation[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using Foldable[V])(using FunctorFilter[V]) =
     import cats.syntax.all.toFoldableOps
     val set2 = r2.rows.asInstanceOf[V[Row]].foldLeft(Set[Row]())(_ + _)
     filterNot(set2.contains)
@@ -205,7 +176,7 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
     (using MonoidK[V])
     (using Applicative[V])
     (using Foldable[V])
-    // : Relation2Meta[V]{
+    // : Relation[V]{
     //   // type Schema = resultSchema.type
     // }
      = 
@@ -220,7 +191,7 @@ abstract class Relation2Meta[V[_]] extends PredicateClassicDsl:
       // val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
       // import cats.MonoidK.ops.toAllMonoidKOps
       // val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])((b, a) => b <+> Applicative[V].pure(a))
-      // Relation2Meta.apply(resultSchema)(vals)
+      // Relation.apply(resultSchema)(vals)
 transparent inline def convertSortedMapToRelation[
   V[_],
   KeySchema <: RecordSchema,
@@ -238,7 +209,7 @@ transparent inline def convertSortedMapToRelation[
   (using MonoidK[V])
   (using Applicative[V])
   (using Foldable[V])
-  : Relation2Meta[V]{
+  : Relation[V]{
     type Schema = resultSchema.type
   }
     = 
@@ -247,7 +218,7 @@ transparent inline def convertSortedMapToRelation[
     val vals: V[resultSchema.Values] = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
       (b, a) => 
       MonoidK[V].combineK(b, Applicative[V].pure(a)))
-    Relation2Meta.apply[RecordSchema.Concat[keySchema.type, aggregateSchema.type], V](resultSchema)(vals)
+    Relation.apply[RecordSchema.Concat[keySchema.type, aggregateSchema.type], V](resultSchema)(vals)
     
 transparent inline def convertSortedMapToV[
   V[_],
@@ -264,7 +235,7 @@ transparent inline def convertSortedMapToV[
   (using MonoidK[V])
   (using Applicative[V])
   (using Foldable[V])
-  // : Relation2Meta[V]{
+  // : Relation[V]{
   //   // type Schema = resultSchema.type
   // }
     = 
@@ -276,9 +247,9 @@ transparent inline def convertSortedMapToV[
       MonoidK[V].combineK(b, Applicative[V].pure(a)))
     vals
 
-object Relation2Meta:
+object Relation:
   transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =
-    new Relation2Meta[V] {
+    new Relation[V] {
       type Schema = s1.type
       val schema = s1
       val rows = v
@@ -287,9 +258,9 @@ object Relation2Meta:
   transparent inline def empty[S1 <: RecordSchema, V[_]](inline s1: S1)(using MonoidK[V]) =
     apply(s1)(MonoidK[V].empty)
 
-  type RelationOf[S <: RecordSchema] = [V[_]] =>> Relation2Meta[V] {
+  type RelationOf[S <: RecordSchema] = [V[_]] =>> Relation[V] {
       type Schema = S
   }
-  type RelationOfV[V[_]] = [S <: RecordSchema] =>> Relation2Meta[V] {
+  type RelationOfV[V[_]] = [S <: RecordSchema] =>> Relation[V] {
       type Schema = S
   }

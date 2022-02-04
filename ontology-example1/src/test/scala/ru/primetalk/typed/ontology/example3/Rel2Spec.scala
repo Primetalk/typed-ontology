@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 // import cats.instances._
 import ru.primetalk.typed.ontology.simple.meta.#:
 import ru.primetalk.typed.ontology.simple.meta.EmptySchema
-import ru.primetalk.typed.ontology.simple.meta.Relation2Meta
+import ru.primetalk.typed.ontology.simple.meta.Relation
 import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToRelation
 import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToV
 import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
@@ -125,7 +125,7 @@ class Rel2Spec extends TestDataRel2:
   }
 
   test("empty"){
-    val p = Relation2Meta.empty[OrderItem.tableSchema.type, List](OrderItem.tableSchema)
+    val p = Relation.empty[OrderItem.tableSchema.type, List](OrderItem.tableSchema)
     p.rows shouldBe empty
   }
   object sumPrice extends Product.column[BigInt]
@@ -198,7 +198,7 @@ class Rel2Spec extends TestDataRel2:
         val allVals: Iterable[resultSchema.Values] = reduced1.toIterable.map(concat(_, _))
         import cats.MonoidK.ops.toAllMonoidKOps
         val vals = allVals.foldLeft(MonoidK[List].empty[resultSchema.Values])((b, a) => b <+> Applicative[List].pure(a))
-        Relation2Meta.apply(resultSchema)(vals)
+        Relation.apply(resultSchema)(vals)
 
     val result = expensesReport(products, orderItems)
     result.rows should equal(List(

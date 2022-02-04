@@ -83,15 +83,5 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
   val tableSchema: TableSchema
   type Row = tableSchema.Values
 
-  trait Relation1 extends Relation0 {
-    type Schema = tableSchema.type
-    val schema = tableSchema
-  }
-  transparent inline def relation0(inline values1: List[Row]) = 
-    new Relation1 {
-      val values = values1
-    }
-
-  transparent inline def relation2[V[_]](inline values1: V[Row]): Relation2Meta[V] = 
-    Relation2Meta(tableSchema)(values1)
-  
+  transparent inline def relation2[V[_]](inline values1: V[Row]): Relation[V] = 
+    Relation(tableSchema)(values1)

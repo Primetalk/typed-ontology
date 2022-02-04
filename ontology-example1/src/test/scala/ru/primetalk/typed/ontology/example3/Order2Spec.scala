@@ -12,15 +12,13 @@ import java.time.LocalDateTime
 trait TestData extends BaseSpec:
   val product1: Product.Row = (1, "product1", BigInt(10))
   val product2: Product.Row = (2, "product2", BigInt(20))
-  object products extends Product.Relation1{ val values = List(product1, product2)}
+  val products = RelationList(Product.tableSchema)(List(product1, product2))
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
-  object orders extends Order.Relation1{ val values = List(order1) }
+  val orders = RelationList(Order.tableSchema)(List(order1))
   val orderItem1: OrderItem.Row = (1,1,1)
   val orderItem2: OrderItem.Row = (2,1,1)
   val orderItem3: OrderItem.Row = (3,1,2)
-  object orderItems extends OrderItem.Relation1 {
-    val values = List(orderItem1,orderItem2, orderItem3)
-  }
+  val orderItems = RelationList(OrderItem.tableSchema)(List(orderItem1,orderItem2, orderItem3))
 
 class Order2Spec extends TestData:
 
@@ -29,9 +27,8 @@ class Order2Spec extends TestData:
     assertResult("id: int")(Product.id.toString)
   }
   test("Projection to smaller schema"){
-    val rel1 = Relation0.apply(OrderItem.tableSchema)(List(orderItem1,orderItem2, orderItem3))
-    val v = rel1.projection(OrderItem.smallerSchema)
-    v.values should equal(List((1,1), (2,1), (3,1)))
+    val v = orderItems.projection(OrderItem.smallerSchema)
+    v.rows should equal(List((1,1), (2,1), (3,1)))
   }
   test("Schema concatenation"){
     val joinSchema = OrderItem.tableSchema.concat(Order.tableSchema)
@@ -91,15 +88,15 @@ class Order2Spec extends TestData:
     val indices: orderItems.schema.IndicesOfProps[OrderItem.smallerSchema.type] = indicesU
 
     val p = Product.primaryKeySchema.projectorFrom(Product.tableSchema)
-    val res = products.values.map(p)
+    val res = products.rows.map(p)
     assert(res == List(Tuple1(1), Tuple1(2)), s"res=$res")
   }
 
   test("propertyGetter"){
     val getId = orderItems.schema.propertyGetter(OrderItem.id)
-    val res = orderItems.values.map(getId)
+    val res = orderItems.rows.map(getId)
     assert(res == List(1,2,3))
     val getProductId = orderItems.schema.propertyGetter(OrderItem.productId)
-    val pres = orderItems.values.map(getProductId)
+    val pres = orderItems.rows.map(getProductId)
     assert(pres == List(1,1,2))
   }
