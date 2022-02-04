@@ -21,9 +21,8 @@ import scala.annotation.targetName
 import scala.runtime.Tuples
 
 /** 
-  * Schema of properties for record R.
+  * Schema of properties for a record R.
   * We can use tuples and maps to represent instances of this schema.
-  * TODO: Support case classes (infer schema from case class; map data to case class)
   */
 sealed trait RecordSchema: 
   self =>
@@ -40,17 +39,6 @@ sealed trait RecordSchema:
   /** A type function that applies a given type function to each property.*/
   type PropertiesMap[F[_]] = Tuple.Map[Properties, F]
   
-  /** Simple tuple representing an instance of this schema. */
-  type Values      = PropertiesMap[RecordProperty0.PropertyValueType]
-
-  // Higher order operation on each value.
-  // Could be used to construct more complex data structures. For instance, tuple of options, or tuple of Either[Error, _]
-  type ValuesMap[H[_]] = Tuple.Map[Values, H]
-
-  def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]]
-
-  def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any]
-
   type IndexOfProp[P <: RecordProperty0] = RecordSchema.IndexOfTypeInTuple[Properties, P]
   transparent inline def indexOfProp[P2 <: RecordProperty0](inline p2: P2): IndexOfProp[p2.type] =
     RecordSchema.indexOfProp(this, p2)
@@ -64,18 +52,6 @@ sealed trait RecordSchema:
   transparent inline def indicesOfProps[S2 <: RecordSchema](inline s2: S2): IndicesOfProps[s2.type] = 
     constValueTuple[IndicesOfProps[s2.type]]
 
-  type ValueAt[I] = 
-    I match
-      case Int =>
-        RecordSchema.ValueAt[this.type, I]
-      case _ => 
-        Nothing
-  transparent inline def getByIndex[I <: Int](inline i: I)(v: Values): ValueAt[I] =
-    RecordSchema.valueAt(this, i)(v)
-
-  def getByIndexRuntime(i: Int)(v: Values): Any =
-    scala.runtime.Tuples.apply(v.asInstanceOf[NonEmptyTuple], i)
-
   /** Concatenates properties of another schema. */
   // transparent inline def concat[S2 <: RecordSchema, This >: this.type <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
   inline def concat[S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[this.type, schema2.type] =
@@ -84,19 +60,6 @@ sealed trait RecordSchema:
         schema2
       case sc: SchemaCons[p, s] => 
         sc.p #: sc.schema.concat(schema2)
-
-  transparent inline def concatValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: RecordSchema.Concat[this.type, schema2.type]): (Values, schema2.Values) => schema3.Values = 
-      (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
-
-  // transparent inline def concatValues[S2 <: RecordSchema](inline schema2: S2) = new {
-  //   type S3T = RecordSchema.Concat[self.type, schema2.type]
-  //   // val resultS 
-  //   transparent inline def apply[S3 <: S3T](inline schema3: S3): (Values, schema2.Values) => schema3.Values = 
-  //     (v1: Values, v2: schema2.Values) => (v1 ++ v2).asInstanceOf[schema3.Values]
-  // }
-  // transparent inline def concatValues[S2 <: RecordSchema/*, This >: this.type <: RecordSchema, S3 <: RecordSchema.Concat[This, S2]*/](inline schema2: S2)= //(inline schema3: S3) = //: (Values, schema2.Values) => schema3.Values = 
-  //   val resultS = concat(schema2)
-  //   (v1: Values, v2: schema2.Values) => (v1 ++ v2).asInstanceOf[resultS.Values]
 
   /** Type of the concatenation of two schemas. */
   type PrependOtherSchema[S1 <: RecordSchema] <: RecordSchema = 
@@ -112,14 +75,59 @@ sealed trait RecordSchema:
       case sc: SchemaCons[p, s] => 
         val ps: PrependOtherSchema[s] = prependOtherSchema[s](sc.schema)
         SchemaCons[p, PrependOtherSchema[s]](sc.p, ps)
-  transparent inline def prependValues[S1 <: RecordSchema](inline schema1: S1)(inline schema3: PrependOtherSchema[S1]): (schema1.Values, Values) => schema3.Values = 
-    (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
-
   /** Type of the concatenation of two schemas. */
   type AppendOtherSchema[S2 <: RecordSchema] <: RecordSchema
 
   transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2]
  
+  @targetName("SchemaCons")
+  inline def #: [P <: RecordProperty0, This >: this.type <: RecordSchema] (p: P): P #: This =
+    SchemaCons[P, This](p, this)
+
+  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema
+
+  /** Replaces properties of the same type. A bit more restricted version of replace. */
+  transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, inline p2: P2): RecordSchema =
+    replace(p1, p2)
+
+  type Remove[P1<:RecordProperty0] <: RecordSchema
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type]
+
+
+
+  // The subsequent elements might eventually be moved from schema.
+  // Currently it doesn't seem to work outside of this trait...
+
+  /** Simple tuple representing an instance of this schema. */
+  type Values      = PropertiesMap[RecordProperty0.PropertyValueType]
+
+  // Higher order operation on each value.
+  // Could be used to construct more complex data structures. For instance, tuple of options, or tuple of Either[Error, _]
+  type ValuesMap[H[_]] = Tuple.Map[Values, H]
+
+  def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]]
+
+  def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any]
+
+  type ValueAt[I] = 
+    I match
+      case Int =>
+        RecordSchema.ValueAt[this.type, I]
+      case _ => 
+        Nothing
+  transparent inline def getByIndex[I <: Int](inline i: I)(v: Values): ValueAt[I] =
+    RecordSchema.valueAt(this, i)(v)
+
+  def getByIndexRuntime(i: Int)(v: Values): Any =
+    scala.runtime.Tuples.apply(v.asInstanceOf[NonEmptyTuple], i)
+
+  transparent inline def concatValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: RecordSchema.Concat[this.type, schema2.type]): (Values, schema2.Values) => schema3.Values = 
+      (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
+
+  transparent inline def prependValues[S1 <: RecordSchema](inline schema1: S1)(inline schema3: PrependOtherSchema[S1]): (schema1.Values, Values) => schema3.Values = 
+    (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
+
   transparent inline def appendValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: AppendOtherSchema[S2]): (Values, schema2.Values) => schema3.Values =
     (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
@@ -139,20 +147,6 @@ sealed trait RecordSchema:
 
   transparent inline def projection[S2 <: RecordSchema](inline schema2: S2): Values => schema2.Values = 
     schema2.projectorFrom(this)
-
-  @targetName("SchemaCons")
-  inline def #: [P <: RecordProperty0, This >: this.type <: RecordSchema] (p: P): P #: This =
-    SchemaCons[P, This](p, this)
-
-  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema
-
-  /** Replaces properties of the same type. A bit more restricted version of replace. */
-  transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, inline p2: P2): RecordSchema =
-    replace(p1, p2)
-
-  type Remove[P1<:RecordProperty0] <: RecordSchema
-
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type]
 
   type OptionValues = ValuesMap[Option]
 
@@ -182,12 +176,23 @@ case object EmptySchema extends RecordSchema:
   type Properties = EmptyTuple
   val properties: Properties = EmptyTuple
 
+  def unapply(e: EmptySchema): true = true
+
+  type AppendOtherSchema[S2 <: RecordSchema] = S2
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] = 
+    s2
+
+  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
+    EmptySchema
+
+  type Remove[P1<:RecordProperty0] = EmptySchema
+
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type] = EmptySchema
+
   def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]] = 
     None
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] = 
     m
-
-  def unapply(e: EmptySchema): true = true
 
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
@@ -200,19 +205,9 @@ case object EmptySchema extends RecordSchema:
 
   transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =
     _ => EmptyTuple
-  type AppendOtherSchema[S2 <: RecordSchema] = S2
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] = 
-    s2
-
-  transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](inline p1: P1, inline p2: P2): RecordSchema =
-    EmptySchema
-
   transparent inline def transformOption: OptionValues => Option[Values] =
     _ => Some(EmptyTuple)
 
-  type Remove[P1<:RecordProperty0] = EmptySchema
-
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type] = EmptySchema
 
 sealed trait NonEmptySchema extends RecordSchema:
   type Properties <: NonEmptyTuple
@@ -361,7 +356,7 @@ object RecordSchema:
     inline schema match
       case EmptySchema        : EmptySchema        => EmptySchema
       case SchemaCons(`p1`, s): SchemaCons[P1, st] => s
-      case SchemaCons(p,    s): SchemaCons[pt, st] => SchemaCons(p, removeDoesntWork(p1, s))
+      case SchemaCons(p,    s): SchemaCons[pt, st] => SchemaCons(p, removeDoesntWork(p1, s)) 
 
 def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] = 
   Expr(a.show)
