@@ -102,3 +102,60 @@ R: <S, V[s]>
 
 Particular implementation of storage for instances could be a collection, a stream or something else of kind `* -> *`.
 
+Schema is a tuple of properties:
+
+```
+S: <p_i,>
+```
+Schema `S1` "is a subschema" of another one `S2` if all properties of `S1` are present in `S2`.
+
+Projection is a binary operation:
+
+```
+Π: R x S => R
+```
+This is only defined when the new schema `S` is a subschema of `R.S`.
+
+We may rename some column in a relation if the type of value is the same.
+
+```
+rename: S x p => S'
+```
+
+Cross product produces all possible combinations of rows in the first relation and in the second one.
+The schema of the new relation is a concatenation of the original schemas.
+
+```
+R1 x R2 => R{ S = S1 ++ S2, V[s] = V[s1] ** V[s2] }
+```
+(where `**` is all combinations)
+
+## Tasks
+
+- DONE: fs2-Stream-based relations
+- DONE: relational algebra, including projection
+- DONE: Table + columns terminology
+- DONE: move simplemeta to -meta
+
+Specific relational algebra operations:
+-       DONE: projection Π
+-       DONE: rename (ρ)
+-       DONE: cross product, 
+-       DONE: join on foreign key
+-       x Natural join (⋈)
+        
+Collection operations:
+-       DONE: set union,
+-       DONE: set difference? - via replaceRows
+-       DONE: selection σ (filtering)
+- DONE: calculate columns
+- DONE: groupBy, groupMapReduce
+- TODO: sql-style grouping + aggregate (with on-the-fly schema construction)
+- TODO: Support case classes (infer schema from case class; map data to case class)
+
+A generic representation of an instance might be a 
+- Map[String, Any], 
+- a tuple of the appropriate values, 
+- a tuple of Options, 
+- a tuple of Eithers, … 
+Conversion becomes error free, straightforward and fully automated.
