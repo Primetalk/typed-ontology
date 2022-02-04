@@ -18,6 +18,7 @@ import scala.compiletime.erasedValue
 import scala.compiletime.constValueTuple
 import java.sql.ResultSet
 import scala.annotation.targetName
+import scala.runtime.Tuples
 
 /** 
   * Schema of properties for record R.
@@ -36,13 +37,17 @@ sealed trait RecordSchema:
 
   type PropertySet = Tuple.Union[Properties] & RecordProperty0
 
-  type Values      = Tuple.Map[Properties, RecordProperty0.PropertyValueType]
+  /** A type function that applies a given type function to each property.*/
+  type PropertiesMap[F[_]] = Tuple.Map[Properties, F]
+  
+  /** Simple tuple representing an instance of this schema. */
+  type Values      = PropertiesMap[RecordProperty0.PropertyValueType]
 
   // Higher order operation on each value.
   // Could be used to construct more complex data structures. For instance, tuple of options, or tuple of Either[Error, _]
-  type HValues[H[_]] = Tuple.Map[Values, H]
+  type ValuesMap[H[_]] = Tuple.Map[Values, H]
 
-  def get[P2 <: RecordProperty0](p2: P2)(v: Values): Option[p2.P]
+  def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]]
 
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any]
 
@@ -124,6 +129,12 @@ sealed trait RecordSchema:
     This >: this.type <: RecordSchema, 
     P <: RecordProperty0](inline p: P): PropertyGetter[p.type]
 
+  type PropertyUpdater[P <: RecordProperty0] = 
+    Values => RecordProperty0.PropertyValueType[P] => Values
+  transparent inline def propertyUpdater[
+    This >: this.type <: RecordSchema, 
+    P <: RecordProperty0](inline p: P): PropertyUpdater[p.type]
+
   transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values
 
   transparent inline def projection[S2 <: RecordSchema](inline schema2: S2): Values => schema2.Values = 
@@ -143,16 +154,22 @@ sealed trait RecordSchema:
 
   transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type]
 
-  type OptionValues = HValues[Option]
+  type OptionValues = ValuesMap[Option]
 
   transparent inline def transformOption: OptionValues => Option[Values]
      
-  type EitherValues[E] = HValues[[V] =>> Either[E, V]]
+  type EitherValues[E] = ValuesMap[[V] =>> Either[E, V]]
 
   transparent inline def fkPredicate[FK <: ForeignKeyId0](inline fk: FK): Values => Boolean = 
     val l = propertyGetter(fk.left)
     val r = propertyGetter(fk.right)
     row => l(row) == r(row)
+
+  extension (values: Values)
+    transparent inline def apply[P <: RecordProperty0](inline p: P) = 
+      self.propertyGetter(p)(values)
+    transparent inline def updated[P <: RecordProperty0](inline p: P)(inline v: RecordProperty0.PropertyValueType[p.type]) = 
+      self.propertyUpdater(p)(values)(v)
 
 type EmptySchema = EmptySchema.type
 
@@ -165,7 +182,7 @@ case object EmptySchema extends RecordSchema:
   type Properties = EmptyTuple
   val properties: Properties = EmptyTuple
 
-  def get[P2 <: RecordProperty0](p2: P2)(v: Values): Option[p2.P] = 
+  def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]] = 
     None
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] = 
     m
@@ -176,6 +193,10 @@ case object EmptySchema extends RecordSchema:
     This >: this.type <: RecordSchema, 
     P<: RecordProperty0](inline p: P): PropertyGetter[p.type] = 
       sys.error(s"There is no property getter for $p in empty schema")
+  transparent inline def propertyUpdater[
+    This >: this.type <: RecordSchema, 
+    P <: RecordProperty0](inline p: P): PropertyUpdater[p.type] = 
+      sys.error(s"There is no property updater for $p in empty schema")
 
   transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =
     _ => EmptyTuple
@@ -206,9 +227,9 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   type Properties = p.type *: schema.Properties
   val properties: Properties = p *: schema.properties
   def parentSchemaOrNothing: ParentSchemaOrNothing = schema
-  def get[P2 <: RecordProperty0](p2: P2)(v: Values): Option[p2.P] = 
+  def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]] = 
     if p2 == p then
-      Some(v.head.asInstanceOf[p2.P])
+      Some(v.head.asInstanceOf[RecordProperty0.PropertyValueType[p2.type]])
     else
       schema.get(p2)(v.tail)
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] =
@@ -222,6 +243,14 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
     P <: RecordProperty0](inline p: P): PropertyGetter[p.type] =
     val i = indexOfProp(p)
     _.apply(i).asInstanceOf[RecordProperty0.PropertyValueType[p.type]]////Tuple.Elem[Values, IndexOfProp[p.type]]]
+  transparent inline def propertyUpdater[
+    This >: this.type <: RecordSchema, 
+    P <: RecordProperty0](inline p: P): PropertyUpdater[p.type] = 
+    val i = indexOfProp(p)
+    values => newPropertyValue =>
+      val arr = Tuples.toIArray(values)
+      val updatedArray = arr.updated(i, newPropertyValue.asInstanceOf[Object])
+      Tuples.fromIArray(updatedArray).asInstanceOf[Values]
     
   // TODO: construct a tuple expression that will return result at once, without the need to reconstruct multiple tuples along the way.
   transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =

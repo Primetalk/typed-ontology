@@ -79,6 +79,14 @@ class Rel2Spec extends TestDataRel2:
       (3,1,2,1,"product1"), 
       (3,1,2,2,"product2"),
     ))
+    import res.schema._
+    res.rows.head(Product.name) should equal("product1")
+  }
+  test("Extension methods to read/write property values"){
+    import products.schema._
+    products.rows.head(Product.name) should equal("product1")
+    val product1updated = products.rows.head.updated(Product.name)("new name")
+    product1updated(Product.name) should equal("new name")
   }
   test("Calculate column"){
     object price extends OrderItem.column[Long]
