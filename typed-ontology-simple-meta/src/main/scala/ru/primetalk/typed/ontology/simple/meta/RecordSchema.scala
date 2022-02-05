@@ -154,6 +154,8 @@ sealed trait RecordSchema:
      
   type EitherValues[E] = ValuesMap[[V] =>> Either[E, V]]
 
+  transparent inline def transformEither[E]: EitherValues[E] => Either[List[E], Values]
+  
   transparent inline def fkPredicate[FK <: ForeignKeyId0](inline fk: FK): Values => Boolean = 
     val l = propertyGetter(fk.left)
     val r = propertyGetter(fk.right)
@@ -208,6 +210,8 @@ case object EmptySchema extends RecordSchema:
   transparent inline def transformOption: OptionValues => Option[Values] =
     _ => Some(EmptyTuple)
 
+  transparent inline def transformEither[E]: EitherValues[E] => Either[List[E], Values] =
+    _ => Right(EmptyTuple)
 
 sealed trait NonEmptySchema extends RecordSchema:
   type Properties <: NonEmptyTuple
@@ -265,14 +269,6 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
       case `p` => p2 #: schema
       case _   => p #: schema.replace(p1, p2)
 
-  transparent inline def transformOption: OptionValues => Option[Values] =
-    val schemaTransformOption = schema.transformOption
-    ov => 
-      ov match
-        case None    *: t => None
-        case Some(v) *: t =>
-          val tr = schemaTransformOption(t)
-          tr.map(v *: _)
   type Remove[P1<:RecordProperty0] <: RecordSchema = 
     P1 match
       case P => S
@@ -283,6 +279,28 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
       case _: P => schema
       case _    => SchemaCons(p, schema.remove(p1))
 
+  transparent inline def transformOption: OptionValues => Option[Values] =
+    val schemaTransformOption = schema.transformOption
+    ov => 
+      ov match
+        case None    *: t => None
+        case Some(v) *: t =>
+          val tr = schemaTransformOption(t)
+          tr.map(v *: _)
+
+  transparent inline def transformEither[E]: EitherValues[E] => Either[List[E], Values] =
+    val schemaTransformEither = schema.transformEither[E]
+    ev => 
+      ev match
+        case v1 *: t =>
+          val tr = schemaTransformEither(t)
+          v1 match 
+            case Left(e)  =>
+              tr match
+                case Left(lst) => Left(e :: lst)
+                case Right(_)  => Left(e :: Nil)
+            case Right(v) =>
+              tr.map(v *: _)
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 
