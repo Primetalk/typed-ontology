@@ -1,4 +1,4 @@
-package ru.primetalk.typed.ontology.simple.meta
+package ru.primetalk.typed.ontology.simple.relalg
 
 // import cats.Map
 import cats.Functor
@@ -12,6 +12,11 @@ import cats.kernel.Semigroup
 import cats.kernel.Order
 import scala.collection.immutable.SortedMap
 import cats.Applicative
+import ru.primetalk.typed.ontology.simple.meta.ForeignKeyId0
+import ru.primetalk.typed.ontology.simple.meta.RecordSchema
+import ru.primetalk.typed.ontology.simple.meta.RecordProperty
+import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
+import ru.primetalk.typed.ontology.simple.meta.TableBuilder
 
 /**
  * Relation is a pair of schema and a collection of instances of that schema.

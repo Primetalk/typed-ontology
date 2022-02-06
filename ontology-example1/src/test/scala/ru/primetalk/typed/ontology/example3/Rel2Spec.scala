@@ -5,12 +5,13 @@ import java.time.LocalDateTime
 // import cats.instances._
 import ru.primetalk.typed.ontology.simple.meta.#:
 import ru.primetalk.typed.ontology.simple.meta.EmptySchema
-import ru.primetalk.typed.ontology.simple.meta.Relation
-import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToRelation
-import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToV
+import ru.primetalk.typed.ontology.simple.relalg.Relation
+import ru.primetalk.typed.ontology.simple.relalg.convertSortedMapToRelation
+import ru.primetalk.typed.ontology.simple.relalg.convertSortedMapToV
 import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
-import ru.primetalk.typed.ontology.simple.meta.relation
+import ru.primetalk.typed.ontology.simple.relalg.relation
+
 import scala.collection.immutable.SortedMap
 import cats.MonoidK
 import cats.Applicative

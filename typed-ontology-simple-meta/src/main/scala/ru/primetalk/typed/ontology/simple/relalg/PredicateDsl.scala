@@ -1,4 +1,7 @@
-package ru.primetalk.typed.ontology.simple.meta
+package ru.primetalk.typed.ontology.simple.relalg
+
+import ru.primetalk.typed.ontology.simple.meta.RecordSchema
+import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
 
 trait PredicateClassicDsl:
   
