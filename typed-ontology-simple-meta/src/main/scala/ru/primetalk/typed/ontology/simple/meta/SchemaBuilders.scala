@@ -71,17 +71,15 @@ def tupleToSchemaImpl2[T<:Tuple](t: Expr[T])(using tt: Type[T])(using Quotes): E
 class RecordSchemaBuilder[R] extends PropertiesBuilder with ForeignKeyBuilder with SchemaBuilder:
   type RecordType = R
 
-/** Table builder autodefines RecordType as equal to this.type.
- * This eliminates the need in a separate phantom type.
- */
+/**
+  * Table builder autodefines RecordType as equal to this.type.
+  * This eliminates the need in a separate phantom type.
+  */
 abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder with SchemaBuilder:
   type RecordType = this.type
-
 
   type TableSchema <: RecordSchema
   transparent inline def infer[S <: RecordSchema]: S = RecordSchema.constSchema[S]
   val tableSchema: TableSchema
   type Row = tableSchema.Values
 
-  transparent inline def relation2[V[_]](inline values1: V[Row]): Relation[V] = 
-    Relation(tableSchema)(values1)

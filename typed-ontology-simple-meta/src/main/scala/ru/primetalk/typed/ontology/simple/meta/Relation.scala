@@ -264,3 +264,7 @@ object Relation:
   type RelationOfV[V[_]] = [S <: RecordSchema] =>> Relation[V] {
       type Schema = S
   }
+
+extension (tb: TableBuilder)
+  transparent inline def relation[V[_]](inline values1: V[tb.Row]): Relation[V] = 
+    Relation(tb.tableSchema)(values1)

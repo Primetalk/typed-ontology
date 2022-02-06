@@ -10,6 +10,7 @@ import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToRelation
 import ru.primetalk.typed.ontology.simple.meta.convertSortedMapToV
 import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
+import ru.primetalk.typed.ontology.simple.meta.relation
 import scala.collection.immutable.SortedMap
 import cats.MonoidK
 import cats.Applicative
@@ -17,13 +18,13 @@ import cats.Applicative
 trait TestDataRel2 extends BaseSpec:
   val product1: Product.Row = (1, "product1", BigInt(5))
   val product2: Product.Row = (2, "product2", BigInt(20))
-  val products = Product.relation2(List(product1, product2))
+  val products = Product.relation(List(product1, product2))
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
-  val orders = Order.relation2(List(order1))
+  val orders = Order.relation(List(order1))
   val orderItem1: OrderItem.Row = (1,1,product1(0))
   val orderItem2: OrderItem.Row = (2,1,product1(0))
   val orderItem3: OrderItem.Row = (3,1,product2(0))
-  val orderItems = OrderItem.relation2(List(orderItem1,orderItem2, orderItem3))
+  val orderItems = OrderItem.relation(List(orderItem1,orderItem2, orderItem3))
 
 class Rel2Spec extends TestDataRel2:
 
