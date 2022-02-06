@@ -1,6 +1,8 @@
-package ru.primetalk.typed.ontology.simple.meta
+package ru.primetalk.typed.ontology.simple.listrelation
 
 import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.simple.meta.RecordSchema
+import ru.primetalk.typed.ontology.simple.meta.ForeignKeyId0
 
 case class JointSchema[S1 <: RecordSchema,
   S2 <: RecordSchema

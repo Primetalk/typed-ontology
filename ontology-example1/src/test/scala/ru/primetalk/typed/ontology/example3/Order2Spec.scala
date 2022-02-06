@@ -8,6 +8,7 @@ import compiletime.constValueTuple
 import compiletime.ops.int._
 import ru.primetalk.typed.ontology.example1._
 import java.time.LocalDateTime
+import ru.primetalk.typed.ontology.simple.listrelation._
 
 trait TestData extends BaseSpec:
   val product1: Product.Row = (1, "product1", BigInt(10))

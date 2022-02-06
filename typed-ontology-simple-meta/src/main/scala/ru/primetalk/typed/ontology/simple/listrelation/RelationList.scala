@@ -3,7 +3,7 @@
   * For instance, here we define PropertyId class that represent a property description.
   * We might want to put any additional metainformation in it. For example,
   */
-package ru.primetalk.typed.ontology.simple.meta
+package ru.primetalk.typed.ontology.simple.listrelation
 
 import scala.language.higherKinds
 import ru.primetalk.typed.ontology.Record
@@ -11,6 +11,9 @@ import scala.quoted.*
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int.S
 import scala.compiletime.constValue
+import ru.primetalk.typed.ontology.simple.meta.RecordSchema
+import ru.primetalk.typed.ontology.simple.meta.ForeignKeyId0
+
 /** A simple version of relation that doesn't depend on cats and keep data in a List.
  */
 trait RelationList:
@@ -41,22 +44,12 @@ trait RelationList:
     }
     
 object RelationList:
-  // type Concat[R1 <: RelationList {type Schema}, R2 <: RelationList{type Schema}] = RelationList {
-  //   type Schema = RecordSchema.Concat[R1#Schema, R2#Schema]
-  // }
   transparent inline def apply[S <: RecordSchema](inline s: S)(inline data: List[s.Values]) =
     new RelationList {
       type Schema = s.type
       val schema = s
       val rows = data
     }
-
-  // type Product[R1 <: RelationList, R2 <: RelationList] = 
-  //   R1 match
-  //     case 
-  //   RelationList {
-  //     type Schema = RecordSchema.Concat[R1#Schema, R2#Schema]
-  //   }
 
 import RecordSchema.Concat
 
