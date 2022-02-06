@@ -1,5 +1,0 @@
-include 'typed-ontology-metameta'
-include 'typed-ontology-meta'
-include 'typed-json'
-include 'typed-cvt-meta-json'
-include 'typed-ontology'
