@@ -52,13 +52,13 @@ abstract class Relation[V[_]] extends PredicateClassicDsl:
   transparent inline def crossProductFrom[R1 <: Relation[V]](inline r1: R1)(using FlatMap[V]): Relation[V] =
     import cats.FlatMap.ops.toAllFlatMapOps
     val schema3 = r1.schema.appendOtherSchema(schema)
-    val f: (r1.schema.Values, schema.Values) => schema3.Values = r1.schema.appendValues(schema)(schema3)
+    val concatValues: (r1.schema.Values, schema.Values) => schema3.Values = r1.schema.appendValues(schema)(schema3)
     val vals = 
       for
         row1 <- r1.rows
         row2 <- this.rows
       yield
-        f(row1, row2)
+        concatValues(row1, row2)
     Relation(schema3)(vals)
 
   transparent inline def crossProduct[R2 <: Relation[V]](inline r2: R2)(using FlatMap[V]) =
@@ -77,13 +77,14 @@ abstract class Relation[V[_]] extends PredicateClassicDsl:
     import cats.FlatMap.ops.toAllFlatMapOps
     import cats.FunctorFilter.ops.toAllFunctorFilterOps
     val schema3 = schema.appendOtherSchema(r2.schema)
-    val f: (schema.Values, r2.schema.Values) => schema3.Values = schema.appendValues(r2.schema)(schema3)
+    val concatValues: (schema.Values, r2.schema.Values) => schema3.Values = 
+      schema.appendValues(r2.schema)(schema3)
     val pred: schema3.Values => Boolean = schema3.fkPredicate(fk)
     val vals = 
       for
         row1 <- this.rows
         row2 <- r2.rows
-        row3 = f(row1, row2)
+        row3 = concatValues(row1, row2)
         // if pred(row3)
       yield
         row3

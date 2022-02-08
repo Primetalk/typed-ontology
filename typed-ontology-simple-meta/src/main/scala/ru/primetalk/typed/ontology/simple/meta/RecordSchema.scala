@@ -253,12 +253,9 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
     
   // TODO: construct a tuple expression that will return result at once, without the need to reconstruct multiple tuples along the way.
   transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =
-    val f2 = s1.propertyGetter(p)
-    val f1: s1.Values => RecordProperty0.PropertyValueType[p.type] = 
-      s1.propertyGetter(p)
-
-    val p1: s1.Values => schema.Values = schema.projectorFrom(s1)
-    (v: s1.Values) => f1(v) *: p1(v)
+    val fp = s1.propertyGetter(p) // : s1.Values => RecordProperty0.PropertyValueType[p.type]
+    val fschema: s1.Values => schema.Values = schema.projectorFrom(s1)
+    (v: s1.Values) => fp(v) *: fschema(v)
 
   type AppendOtherSchema[S2 <: RecordSchema] = SchemaCons[P, schema.AppendOtherSchema[S2]]
   transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2] =
