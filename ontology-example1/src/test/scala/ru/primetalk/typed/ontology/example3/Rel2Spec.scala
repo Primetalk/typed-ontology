@@ -104,6 +104,25 @@ class Rel2Spec extends TestDataRel2:
         |(30,3,1,2)""".stripMargin
     )
   }
+  test("Calculate column with expr"){
+    object price extends OrderItem.column[Int]
+    val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
+    val p = orderItems.prependCalcColumn(price)({
+      import OrderItem._
+      import orderItems._
+
+      rowFun(prop(id) * const(10))
+    })
+    val s = price #: OrderItem.tableSchema
+    val res = p.projection(s)
+    res.show should equal(
+      """price: int, id: int, orderId: int, productId: int
+        |-----
+        |(10,1,1,1)
+        |(20,2,1,1)
+        |(30,3,1,2)""".stripMargin
+    )
+  }
   test("Rename column"){
     object id2 extends OrderItem.column[Int]
     val p = orderItems.rename(OrderItem.id, id2)
@@ -255,7 +274,7 @@ class Rel2Spec extends TestDataRel2:
         val itemsForOrderId = {
           import OrderItem._
           import orderItem._
-          filter(rowFun(prop(orderId) === Value(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          filter(rowFun(prop(orderId) === const(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
           //tagless doesn't work yet... orderItem.filter(orderItem.expr[Boolean]([E[_]] => (e: orderItem.TaglessDsl[E]) => e.value(true)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
         }
         val prod = product.crossProduct(itemsForOrderId)
@@ -293,7 +312,7 @@ class Rel2Spec extends TestDataRel2:
         val itemsForOrderId = {
           import OrderItem._
           import orderItem._
-          filter(rowFun(prop(orderId) === Value(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          filter(rowFun(prop(orderId) === const(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
           //tagless doesn't work yet... orderItem.filter(orderItem.expr[Boolean]([E[_]] => (e: orderItem.TaglessDsl[E]) => e.value(true)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
         }
         val joined = product.join(OrderItem.productIdFk)(itemsForOrderId)

@@ -22,7 +22,7 @@ import ru.primetalk.typed.ontology.simple.meta.TableBuilder
  * Relation is a pair of schema and a collection of instances of that schema.
  * V - is the collection type (List, Stream[...]).
  */
-abstract class Relation[V[_]] extends PredicateClassicDsl:
+abstract class Relation[V[_]] extends ExprClassicDsl:
   self =>
   
   type Schema <: RecordSchema

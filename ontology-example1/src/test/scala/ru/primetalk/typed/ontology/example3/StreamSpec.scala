@@ -255,7 +255,7 @@ class StreamSpec extends TestDataStream:
         val itemsForOrderId = {
           import OrderItem._
           import orderItem._
-          filter(rowFun(prop(orderId) === Value(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          filter(rowFun(prop(orderId) === const(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
           //tagless doesn't work yet... orderItem.filter(orderItem.expr[Boolean]([E[_]] => (e: orderItem.TaglessDsl[E]) => e.value(true)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
         }
         val prod = product.crossProduct(itemsForOrderId)
@@ -293,7 +293,7 @@ class StreamSpec extends TestDataStream:
         val itemsForOrderId = {
           import OrderItem._
           import orderItem._
-          filter(rowFun(prop(orderId) === Value(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
+          filter(rowFun(prop(orderId) === const(orderIdValue)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
           //tagless doesn't work yet... orderItem.filter(orderItem.expr[Boolean]([E[_]] => (e: orderItem.TaglessDsl[E]) => e.value(true)))// row => orderItem.schema.propertyGetter(orderId)(row) == orderIdValue)
         }
         val joined = product.join(OrderItem.productIdFk)(itemsForOrderId)
