@@ -106,16 +106,18 @@ class Rel2Spec extends TestDataRel2:
   }
   test("Calculate column with expr"){
     object price extends OrderItem.column[Int]
-    val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
-    val p = orderItems.prependCalcColumn(price)({
-      import OrderItem._
-      import orderItems._
-
-      rowFun(prop(id) * const(10))
-    })
-    val s = price #: OrderItem.tableSchema
-    val res = p.projection(s)
-    res.show should equal(
+    val p = orderItems.
+      prependCalcColumn(price)({
+        import orderItems._
+        rowFun(prop(OrderItem.id) * const(10))
+      })
+    // TODO: test with a newer version of Scala
+    // For some reason the following doesn't work: 
+    // prependCalcColumnF(price)({
+    //   import orderItems._
+    //   prop(OrderItem.id) * const(10)
+    // })
+    p.show should equal(
       """price: int, id: int, orderId: int, productId: int
         |-----
         |(10,1,1,1)

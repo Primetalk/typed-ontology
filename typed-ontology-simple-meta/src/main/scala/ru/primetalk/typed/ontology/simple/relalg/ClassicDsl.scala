@@ -22,6 +22,8 @@ trait ExprClassicDsl:
   extension [T](r: RelExpr[T])
     inline def ===(inline other: RelExpr[T]): Function2Expr[T, T, Boolean] = 
       Function2Expr[T, T, Boolean](r, other, "==", _ == _)
+    inline def map[R](inline f: T => R): Function1Expr[T, R] = 
+      Function1Expr(r, "<f-map>", f)
 
   inline def not(r: RelExpr[Boolean]): Function1Expr[Boolean, Boolean] = 
     Function1Expr[Boolean, Boolean](r, "not", !_)

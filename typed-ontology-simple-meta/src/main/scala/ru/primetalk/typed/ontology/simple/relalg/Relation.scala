@@ -96,6 +96,8 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     val schema3 = p #: schema
     val vals = rows.map(row => (f(row) *: row).asInstanceOf[schema3.Values])
     Relation(schema3)(vals)
+  transparent inline def prependCalcColumnF[P <: RecordProperty0](inline p: P)(inline f: RelExpr[p.P])(using FlatMap[V]) =
+    prependCalcColumn(p)(rowFun(f))
 
   transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, p2: P2)(using Functor[V]) =
     val schema3 = schema.rename(p1, p2)
