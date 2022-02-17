@@ -32,11 +32,12 @@ For example, an entity `A` may have attributes `a`, `b`, `c`. And we can create 
 
 Have a look:
 
-    object person extends SchemaBuilder[Person]:
-      val name: PropertyId[Record[Person], String] = property[String]
-      val address = property[Record[Address]]
-      val dob = property[LocalDate]
-
+```scala
+object person extends SchemaBuilder[Person]:
+  val name: PropertyId[Record[Person], String] = property[String]
+  val address = property[Record[Address]]
+  val dob = property[LocalDate]
+```
 These instances are about some properties of a `Record` that might contain some information about 
 an abstract "`Person`" (phantom type). From this definition we can say that `Person` is some type
 that might have `name`, `address`, `dob`. And we know that if there are some values for these 
@@ -44,8 +45,10 @@ properties the values should be of corresponding types.
  
 If we take a look at definitions of `Record`, `Person`:
 
-    abstract final class Record[A]
-    abstract final class Person
+```scala
+abstract final class Record[A]
+abstract final class Person
+```
 
 we immediately see that these classes cannot contain any data. In this example we cannot even 
 instantiate them. (Though in other cases we may use instantiatable classes.)
@@ -53,12 +56,16 @@ instantiate them. (Though in other cases we may use instantiatable classes.)
 Does this prevent us from dealing with the data associated with the properties? No. 
 We can use a pair:
  
-    case class PropertyValue[A,B](propertyId: Property[Record[A], B], B)
+```scala
+case class PropertyValue[A,B](propertyId: Property[Record[A], B], B)
+```
 
 To keep more property values we may have a collection of pairs, or use typed-map
 
-    val alice: TypedMap[Person]
-    val name = alice.get(person.name) // : Option[String]
+```scala
+val alice: TypedMap[Person]
+val name = alice.get(person.name) // : Option[String]
+```
 
 Alternatively, we can use tuple of values and corresponding tuple of properties.
 
@@ -152,6 +159,9 @@ Collection operations:
 - DONE: groupBy, groupMapReduce
 - TODO: sql-style grouping + aggregate (with on-the-fly schema construction)
 - TODO: Support case classes (infer schema from case class; map data to case class)
+- DONE: calculatable columns based on relational expressions
+- TODO: erased relational expressions
+- TODO: compile-time relational expressions rewrite for arbitrary expressions
 
 A generic representation of an instance might be a 
 - Map[String, Any], 
