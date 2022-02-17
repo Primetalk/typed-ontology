@@ -28,6 +28,15 @@ The collection of attributes of an instance is determined by it's **schema**.
 For example, an entity `A` may have attributes `a`, `b`, `c`. And we can create a few *schemas* for the same entity - 
 `(a,b)`, `(a)`, `(a,b,c)`. We may even talk about a schema that spans a few entities - `(A.a, A.b, B.a)`.
 
+
+A generic representation of an **instance** might be a 
+- a tuple of the appropriate values, 
+- Map[String, Any],
+- tmap
+- a tuple of Options, 
+- a tuple of Eithers, 
+- … 
+
 ## Primer
 
 Have a look:
@@ -92,6 +101,7 @@ In `updated` event we might only keep information about the fields that were act
 We may have the same information represented in different formats. 
 And we'd rather keep core schema definition in a central place.
 We should be able to represent conversion mapping using individual format definitions.
+Conversion becomes error free, straightforward and fully automated.
 
 ### SQL-style operations
 
@@ -137,35 +147,29 @@ R1 x R2 => R{ S = S1 ++ S2, V[s] = V[s1] ** V[s2] }
 ```
 (where `**` is all combinations)
 
-## Tasks
+## Supported features
 
-- DONE: fs2-Stream-based relations
-- DONE: relational algebra, including projection
-- DONE: Table + columns terminology
-- DONE: move simplemeta to -meta
+- [x] relational algebra, including projection
+- [x] fs2-Stream-based relations
 
 Specific relational algebra operations:
--       DONE: projection Π
--       DONE: rename (ρ)
--       DONE: cross product, 
--       DONE: join on foreign key
--       x Natural join (⋈)
+- [x] projection Π
+- [x] rename (ρ)
+- [x] cross product, 
+- [x] join on foreign key
+- [ ] WONTDO: Natural join (⋈)
         
 Collection operations:
--       DONE: set union,
--       DONE: set difference? - via replaceRows
--       DONE: selection σ (filtering)
-- DONE: calculate columns
-- DONE: groupBy, groupMapReduce
-- TODO: sql-style grouping + aggregate (with on-the-fly schema construction)
-- TODO: Support case classes (infer schema from case class; map data to case class)
-- DONE: calculatable columns based on relational expressions
-- TODO: erased relational expressions
-- TODO: compile-time relational expressions rewrite for arbitrary expressions
+- [x] set union,
+- [x] set difference? - via replaceRows
+- [x] selection σ (filtering)
+- [x] calculate columns
+- [x] groupBy, groupMapReduce
+- [x] calculatable columns based on relational expressions
 
-A generic representation of an instance might be a 
-- Map[String, Any], 
-- a tuple of the appropriate values, 
-- a tuple of Options, 
-- a tuple of Eithers, … 
-Conversion becomes error free, straightforward and fully automated.
+## Tasks
+
+- [ ] sql-style grouping + aggregate (with on-the-fly schema construction)
+- [ ] Support case classes (infer schema from case class; map data to case class)
+- [ ] erased relational expressions
+- [ ] compile-time relational expressions rewrite for arbitrary expressions
