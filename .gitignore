@@ -68,3 +68,6 @@ project/plugins/project/
 .worksheet
 
 
+.bloop/
+.bsp/
+.metals/
