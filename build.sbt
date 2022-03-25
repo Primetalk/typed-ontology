@@ -1,5 +1,5 @@
-val scala3Version = "3.1.2-RC1"
-val mainVersion = "0.2.0-SNAPSHOT"
+val scala3Version = "3.1.2-RC2"
+val mainVersion = "0.2.2-SNAPSHOT"
 
 ThisBuild / organization := "ru.primetalk"
 ThisBuild / version      := mainVersion
@@ -34,7 +34,7 @@ val commonSettings = Seq(
     catsCore,
     "com.novocode" % "junit-interface" % "0.11" % Test,
     "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
-    "org.scalatest"  %% "scalatest"  % "3.2.10" % Test,
+    "org.scalatest"  %% "scalatest"  % "3.2.11" % Test,
   )
 )
 
@@ -42,11 +42,20 @@ lazy val root = (project in file("."))
   .aggregate(
     typedOntologyMetaMeta,
     typedOntologyMeta,
+    typedOntologySimpleMeta,
+    sourceCode,
     ontologyExample1,
   )
   .settings(
     name := "typed-ontology"
   )
+
+lazy val sourceCode = project
+  .in(file("source-code"))
+  .settings(
+    name := "source-code",
+  )
+  .settings(commonSettings :_*)
 
 lazy val typedOntologyMetaMeta = project
   .in(file("typed-ontology-metameta"))
