@@ -48,7 +48,8 @@ lazy val root = (project in file("."))
     ontologyExample1,
   )
   .settings(
-    name := "typed-ontology"
+    name := "typed-ontology",
+    publish / skip := true,
   )
 
 lazy val sourceCode = project
@@ -86,6 +87,7 @@ lazy val ontologyExample1 = project
   .in(file("ontology-example1"))
   .settings(
     name := "ontology-example1",
+    publish / skip := true,
   )
   .dependsOn(
     typedOntologySimpleMeta
