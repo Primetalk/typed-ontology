@@ -1,9 +1,10 @@
-val scala3Version = "3.1.2-RC2"
-val mainVersion = "0.2.2-SNAPSHOT"
+val scala3Version = "3.1.2-RC3"
+val mainVersion = "0.2.3"//-SNAPSHOT"
 
 ThisBuild / organization := "ru.primetalk"
 ThisBuild / version      := mainVersion
 ThisBuild / scalaVersion := scala3Version
+ThisBuild / versionScheme := Some("early-semver")
 
 // scalacOptions ++= Seq(
 //    "-deprecation",         // emit warning and location for usages of deprecated APIs
