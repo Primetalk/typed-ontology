@@ -1,6 +1,7 @@
-package ru.primetalk.typed.ontology
+package ru.primetalk.typed.ontology.metameta
 
 import scala.language.{higherKinds, implicitConversions}
+import ru.primetalk.typed.ontology.metameta.RttiProvider
 
 /**
   * Meta-meta package contains instruments to define meta level of ontology.
@@ -17,5 +18,13 @@ abstract final class Scalar[A] extends OntologyType
 /** Phantom type that represents a collection of elements of type A. */
 abstract final class MetaSeq[+A <: OntologyType] extends OntologyType
 
+abstract final class OntologyEnum[A] extends OntologyType
+
 trait PropertyIdTypeClass[PropertyId[-_,_ <: OntologyType]]:
   def name[A, B <: OntologyType](p: PropertyId[A,B]): String
+
+given scalarRtti[T](using tprov: RttiProvider[T]): RttiProvider[Scalar[T]] = new RttiProvider[Scalar[T]]:
+  def rtti = tprov.rtti
+
+given metaSeqRtti[T <: OntologyType](using tprov: RttiProvider[T]): RttiProvider[MetaSeq[T]] = new RttiProvider[MetaSeq[T]]:
+  def rtti = RuntimeTypeInformation.SeqType(tprov.rtti)
