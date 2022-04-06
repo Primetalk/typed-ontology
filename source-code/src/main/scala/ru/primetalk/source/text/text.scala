@@ -4,25 +4,34 @@ package ru.primetalk.source.text
 /** Representation of source code. */
 sealed trait Text
 
-case class Inline(parts: List[String]) extends Text
+case class Span(parts: List[String]) extends Text
 
-case class Block(lines: List[Text]) extends Text
+case class Div(lines: List[Text]) extends Text
+
+case class Indent(lines: List[Text]) extends Text
 
 def concat(a: Text, b: Text): Text = 
   a match
-    case i1@Inline(parts1) =>
+    case i1@Span(parts1) =>
       b match
-        case Inline(parts2) => Inline(parts1 ++ parts2)
-        case Block(lines2) => Block(i1 :: lines2)
-    case Block(lines1) =>
+        case Span(parts2) => Span(parts1 ++ parts2)
+        case Div(lines2) => Div(i1 :: lines2)
+        case Indent(_) => Div(List(i1, b))
+    case Div(lines1) =>
       b match
-        case i@Inline(parts2) => Block(lines1 ++ List(i))
-        case Block(lines2) => Block(lines1 ++ lines2)
+        case i@Span(parts2) => Div(lines1 ++ List(i))
+        case Div(lines2) => Div(lines1 ++ lines2)
+        case Indent(_) => Div(lines1 ++ List(b))
+    case Indent(lines1) =>
+      b match
+        case Span(_) => Div(List(a, b))
+        case Div(_) => Div(List(a, b))
+        case Indent(lines2) => Div(lines1 ++ lines2)
 
 def concatList(lst: Text*): Text = lst.reduce(concat)
 
 extension (s: String)
-  def asText = Inline(List(s))
+  def asText = Span(List(s))
 
 def lift(s: String) = 
   s.asText
@@ -33,17 +42,29 @@ extension (t: Text)
   def +(other: String) =
     concat(t, lift(other))
 
-def lines(t: Text, indent: Int = 0, indentStep: Int = 2): List[String] =
-  t match
-    case Inline(parts) =>  List(("".padTo(indent, ' ') :: parts).mkString)
-    case Block(lines1) =>
-      lines1.flatMap(t => lines(t, indent + indentStep))
+case class IndentationStyle(indentStep: Int = 2, indentChar: Char = ' ')
 
-def showText(t: Text, indentStep: Int = 2): String = 
-  lines(t, indentStep = indentStep).mkString("\n")
+val JavaIndentation = IndentationStyle(4, ' ')
+val ScalaIndentation = IndentationStyle(2, ' ')
+val GolangIndentation = IndentationStyle(1, '\t')
+
+def lines(t: Text, indent: Int = 0, indentStyle: IndentationStyle = ScalaIndentation): List[String] =
+  t match
+    case Span(parts) => 
+      List(("".padTo(indent, indentStyle.indentChar) :: parts).mkString)
+    case Div(lines1) =>
+      lines1.flatMap(t => lines(t, indent))
+    case Indent(lines1) =>
+      lines1.flatMap(t => lines(t, indent + indentStyle.indentStep))
+
+def showText(t: Text, indentStyle: IndentationStyle = ScalaIndentation): String = 
+  lines(t, indentStyle = indentStyle).mkString("\n")
 
 trait Show[T]:
   def show(t: T): Text
 
-def render[T](t: T, indent: Int = 2)(using s: Show[T]): String =
-  showText(s.show(t))
+def render[T](t: T, indentStyle: IndentationStyle = ScalaIndentation)(using s: Show[T]): String =
+  showText(s.show(t), indentStyle = indentStyle)
+
+def show[T](t: T)(using s: Show[T]): Text =
+  s.show(t)
