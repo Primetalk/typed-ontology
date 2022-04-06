@@ -5,6 +5,13 @@ import scala.quoted.Expr
 import scala.quoted.Type
 import scala.quoted.Quotes
 import scala.quoted.Varargs
+import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.NamedType
+import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.EnumType
+import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation
+import ru.primetalk.typed.ontology.metameta.RttiProvider
+import ru.primetalk.typed.ontology.metameta.OntologyEnum
+import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.EnumValue
+import ru.primetalk.typed.ontology.utils.objectName
 
 trait RecordSchemaBuilderBase:
   type RecordType
@@ -86,3 +93,8 @@ abstract class TableBuilder extends SelfSchemaBuilder:
   val tableSchema: TableSchema
   type Row = tableSchema.Values
 
+abstract class EnumBuilder:
+  type SelfEnum
+  def ontologyEnum(name: String, values: SelfEnum*): RttiProvider[OntologyEnum[SelfEnum]] = 
+    new RttiProvider[OntologyEnum[SelfEnum]]:
+      def rtti = NamedType(name, EnumType(values.toList.map(v => EnumValue(objectName(v), v))))

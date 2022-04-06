@@ -2,7 +2,7 @@ package ru.primetalk.typed.ontology.nested.meta
 
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 import scala.quoted.*
 import scala.quoted.Expr.ofList
 
