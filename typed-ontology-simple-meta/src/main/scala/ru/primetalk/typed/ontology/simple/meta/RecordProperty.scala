@@ -1,7 +1,8 @@
 package ru.primetalk.typed.ontology.simple.meta
 
 import scala.reflect.ClassTag
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.utils.objectName
 
 sealed trait RecordProperty0:
   // Record type
@@ -40,4 +41,4 @@ trait PropertiesBuilder extends RecordSchemaBuilderBase:
     new SimplePropertyId[RecordType, T](name, summon){}
   /** Convenient mechanism to create a self-typed property.*/
   abstract class column[T: ClassTag] extends SimplePropertyId[RecordType, T]("", summon):
-    override val name = this.getClass.getSimpleName.replace("$", "")
+    override val name = objectName(this)

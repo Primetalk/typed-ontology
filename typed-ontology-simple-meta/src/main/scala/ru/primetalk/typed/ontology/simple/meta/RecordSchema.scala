@@ -6,7 +6,7 @@
 package ru.primetalk.typed.ontology.simple.meta
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 import scala.quoted.*
 import scala.quoted.Expr.ofList
 

@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.simple.listrelation
 
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
 import ru.primetalk.typed.ontology.simple.meta.ForeignKeyId0
 
