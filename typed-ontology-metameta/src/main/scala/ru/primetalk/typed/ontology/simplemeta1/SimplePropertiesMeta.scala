@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology.simplemeta1
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 import scala.reflect.ClassTag
 import scala.quoted.*
 import scala.annotation.transparentTrait

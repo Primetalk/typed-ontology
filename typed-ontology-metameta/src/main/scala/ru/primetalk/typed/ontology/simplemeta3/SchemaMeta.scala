@@ -6,7 +6,7 @@
 package ru.primetalk.typed.ontology.simplemeta3
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 import scala.quoted.*
 import scala.quoted.Expr.ofList
 
@@ -14,6 +14,7 @@ import scala.reflect.ClassTag
 import scala.compiletime.ops.int._
 import scala.compiletime.constValue
 import scala.compiletime.constValueTuple
+import ru.primetalk.typed.ontology.utils.objectName
 
 /** 
   * Schema of properties for record R.
@@ -377,7 +378,7 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
   type RecordType = this.type
 
   protected abstract class column[T: ClassTag] extends SimplePropertyId[RecordType, T]("", summon):
-    override val name = this.getClass.getSimpleName.replace("$", "")
+    override val name = objectName(this)
 
   type TableSchema <: RecordSchema
   val tableSchema: TableSchema

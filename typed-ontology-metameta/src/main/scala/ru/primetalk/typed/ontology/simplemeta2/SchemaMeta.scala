@@ -6,7 +6,7 @@
 package ru.primetalk.typed.ontology.simplemeta2
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 import scala.quoted.*
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int.S

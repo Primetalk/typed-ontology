@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology.simplemeta3
 
 import scala.reflect.ClassTag
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 
 sealed trait RecordProperty0:
   type R

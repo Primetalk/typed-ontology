@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.simplemeta2
 
-import ru.primetalk.typed.ontology.Record
+import ru.primetalk.typed.ontology.metameta.Record
 
 sealed trait ForeignKeyId0:
   type Left <: RecordProperty0
