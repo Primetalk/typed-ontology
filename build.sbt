@@ -44,20 +44,12 @@ lazy val root = (project in file("."))
     typedOntologyMetaMeta,
     typedOntologyMeta,
     typedOntologySimpleMeta,
-    sourceCode,
     ontologyExample1,
   )
   .settings(
     name := "typed-ontology",
     publish / skip := true,
   )
-
-lazy val sourceCode = project
-  .in(file("source-code"))
-  .settings(
-    name := "source-code",
-  )
-  .settings(commonSettings :_*)
 
 lazy val typedOntologyMetaMeta = project
   .in(file("typed-ontology-metameta"))
