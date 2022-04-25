@@ -15,18 +15,37 @@ def concat(a: Text, b: Text): Text =
     case i1@Span(parts1) =>
       b match
         case Span(parts2) => Span(parts1 ++ parts2)
-        case Div(lines2) => Div(i1 :: lines2)
+        case Div(lines2) =>
+          Div( 
+            lines2 match
+              case Span(s) :: tail =>
+                Span(parts1 ::: s) :: tail
+              case _ =>
+                i1 :: lines2
+          )
         case Indent(_) => Div(List(i1, b))
     case Div(lines1) =>
-      b match
-        case i@Span(parts2) => Div(lines1 ++ List(i))
-        case Div(lines2) => Div(lines1 ++ lines2)
-        case Indent(_) => Div(lines1 ++ List(b))
+      Div(
+        b match
+          case i@Span(parts2) => 
+            if lines1.isEmpty then 
+              List(b)
+            else
+              lines1.init ++ List(lines1.last + b)
+          case Div(lines2) => lines1 ++ lines2
+          case Indent(_) => 
+            if lines1.isEmpty then 
+              List(b)
+            else
+              lines1.init ++ List(lines1.last + b)
+      )
     case Indent(lines1) =>
-      b match
-        case Span(_) => Div(List(a, b))
-        case Div(_) => Div(List(a, b))
-        case Indent(lines2) => Div(lines1 ++ lines2)
+      Div(
+        b match
+          case Span(_) => List(a, b)
+          case Div(lst) => a :: lst
+          case Indent(lines2) => lines1 ++ lines2
+      )
 
 def concatList(lst: Text*): Text = lst.reduce(concat)
 
@@ -53,9 +72,9 @@ def lines(t: Text, indent: Int = 0, indentStyle: IndentationStyle = ScalaIndenta
     case Span(parts) => 
       List(("".padTo(indent, indentStyle.indentChar) :: parts).mkString)
     case Div(lines1) =>
-      lines1.flatMap(t => lines(t, indent))
+      lines1.flatMap(t => lines(t, indent, indentStyle))
     case Indent(lines1) =>
-      lines1.flatMap(t => lines(t, indent + indentStyle.indentStep))
+      lines1.flatMap(t => lines(t, indent + indentStyle.indentStep, indentStyle))
 
 def showText(t: Text, indentStyle: IndentationStyle = ScalaIndentation): String = 
   lines(t, indentStyle = indentStyle).mkString("\n")

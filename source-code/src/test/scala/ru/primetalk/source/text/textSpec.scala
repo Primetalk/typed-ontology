@@ -7,7 +7,7 @@ import org.scalatest.matchers.should
 
 class TextSpec extends BaseSpec:
   "text" should "concatenate and render" in {
-    val text = Block(List(
+    val text = Indent(List(
       lift("a ") + lift("b ") + lift("c"),
       lift("a2 ") + lift("b2 ") + lift("c2")
     ))
