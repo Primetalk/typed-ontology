@@ -11,6 +11,9 @@ object RttiProvider:
   def apply[T](using RttiProvider[T]): RttiProvider[T] = 
       summon[RttiProvider[T]]
 
+  def provide[T](rtti1: RuntimeTypeInformation): RttiProvider[T] = new RttiProvider[T]:
+    def rtti: RuntimeTypeInformation = rtti1
+
 object RuntimeTypeInformation:
   def apply[T](using RttiProvider[T]): RuntimeTypeInformation = 
       RttiProvider[T].rtti
@@ -34,6 +37,11 @@ object RuntimeTypeInformation:
   case class NamedType(name: String, rtti: RuntimeTypeInformation) extends RuntimeTypeInformation:
     override def toString = name
 
+  // This is used to define types inside some package/object/module
+  case class DependentType(otpe: OntologyType) extends RuntimeTypeInformation
+
+  case class Module(publicDeclarations: List[NamedType]) extends RuntimeTypeInformation
+
   object PlainType:
     def scalaRtti[T: ClassTag]: RttiProvider[T] = new RttiProvider[T]:
         def rtti = ClassTypeInformation(summon[ClassTag[T]])
@@ -46,3 +54,8 @@ object RuntimeTypeInformation:
 
   case class SeqType(element: RuntimeTypeInformation) extends RuntimeTypeInformation:
     override def toString = s"Seq[${element}]"
+
+/** This provides information about some named instance.
+ * For example, an instance might be of type Module and contain other types.
+*/
+case class RuntimeInstanceInformation(name: String, rtti: RuntimeTypeInformation)
