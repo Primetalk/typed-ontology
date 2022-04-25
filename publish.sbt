@@ -17,7 +17,7 @@ ThisBuild / developers := List(
   )
 )
 
-ThisBuild / description := "Rewritable tree typeclass and supporting algorithms."
+ThisBuild / description := "Typed ontology meta projects."
 ThisBuild / licenses := List("MIT" -> new URL("https://opensource.org/licenses/MIT"))
 ThisBuild / homepage := Some(url("https://github.com/Primetalk/typed-ontology"))
 
@@ -34,5 +34,5 @@ ThisBuild / publishMavenStyle := true
 
 pgpSecretRing := pgpPublicRing.value
 
-usePgpKeyHex("855c7687")
+usePgpKeyHex("9A3032D0")
 
