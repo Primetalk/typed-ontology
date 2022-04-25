@@ -7,20 +7,23 @@ import ru.primetalk.typed.ontology.utils.objectName
 import RuntimeTypeInformation.{NamedType, EntityType}
 
 sealed trait RecordProperty0:
-  // Record type
+  // Record type. This is not OntologyType, because only records can have named attributes.
   type R
   // Property type
   type P <: OntologyType
 
   val name: String
 
-/** Type of record property identifier. */
+/** Type of record property identifier. 
+ * @tparam A Phantom type of record. It's not an ontology type, because only records can have named attributes.
+ */
 sealed trait RecordProperty[A] extends RecordProperty0:
   type R = A
 /**
   * Metainformation about property.
   * Contains unique name (within the type) and type of the value.
   * Might contain other metainformation about property, like Schema.
+  * @tparam A Phantom type of record. It's not an ontology type, because only records can have named attributes.
   */
 abstract class AttributeId[A, B <: OntologyType](name1: String, val tpe: RttiProvider[B]) extends RecordProperty[A]:
   type P = B
@@ -62,8 +65,14 @@ trait PropertiesBuilder extends RecordSchemaBuilderBase:
 
   abstract class seqOfEnum[T](using RttiProvider[MetaSeq[OntologyEnum[T]]]) extends seq[OntologyEnum[T]]
 
-  def defineEntityType(name: String, columns: AttributeId[RecordType, _]*): RttiProvider[Record[RecordType]] = new RttiProvider[Record[RecordType]]:
-    def rtti = NamedType(name, EntityType(columns.map(a => (a.name, a.tpe.rtti)).toMap))
+  def namedEntityType(name: String, columns: AttributeId[RecordType, _]*): NamedType =
+    NamedType(name, EntityType(columns.map(a => (a.name, a.tpe.rtti)).toMap))
+
+  def namedEntityType(columns: AttributeId[RecordType, _]*): NamedType =
+    namedEntityType(objectName(this), columns*)
+
+  def defineEntityType(name: String, columns: AttributeId[RecordType, _]*): RttiProvider[Record[RecordType]] =
+    RttiProvider.provide[Record[RecordType]](namedEntityType(name, columns*))
 
   def defineEntityType(columns: AttributeId[RecordType, _]*): RttiProvider[Record[RecordType]] =
-    defineEntityType(objectName(this), columns:_*)
+    defineEntityType(objectName(this), columns*)

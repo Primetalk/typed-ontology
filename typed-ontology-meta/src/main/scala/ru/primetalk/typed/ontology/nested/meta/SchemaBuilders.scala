@@ -12,6 +12,7 @@ import ru.primetalk.typed.ontology.metameta.RttiProvider
 import ru.primetalk.typed.ontology.metameta.OntologyEnum
 import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.EnumValue
 import ru.primetalk.typed.ontology.utils.objectName
+import ru.primetalk.typed.ontology.metameta.Record
 
 trait RecordSchemaBuilderBase:
   type RecordType
@@ -79,8 +80,12 @@ class RecordSchemaBuilder[R] extends PropertiesBuilder with SchemaBuilder:
   type RecordType = R
   
 abstract class SelfSchemaBuilder extends PropertiesBuilder with SchemaBuilder:
-  type RecordType = this.type
-
+  type Self = this.type
+  type RecordType = Self
+  def namedType: NamedType
+  given RttiProvider[Record[Self]] = 
+    RttiProvider.provide(namedType)
+    
 /**
   * Table builder autodefines RecordType as equal to this.type.
   * This eliminates the need in a separate phantom type.
@@ -94,7 +99,19 @@ abstract class TableBuilder extends SelfSchemaBuilder:
   type Row = tableSchema.Values
 
 abstract class EnumBuilder:
-  type SelfEnum
-  def ontologyEnum(name: String, values: SelfEnum*): RttiProvider[OntologyEnum[SelfEnum]] = 
-    new RttiProvider[OntologyEnum[SelfEnum]]:
-      def rtti = NamedType(name, EnumType(values.toList.map(v => EnumValue(objectName(v), v))))
+  type Self
+  def namedEnum(name: String, values: Self*): NamedType = 
+    NamedType(name, EnumType(values.toList.map(v => EnumValue(objectName(v), v))))
+
+  def namedEnum(values: Self*): NamedType = 
+    NamedType(objectName(this), EnumType(values.toList.map(v => EnumValue(objectName(v), v))))
+
+  // def ontologyEnum(name: String, values: Self*): RttiProvider[OntologyEnum[Self]] = 
+  //   new RttiProvider[OntologyEnum[Self]]:
+  //     def rtti = namedEnum(name, values*)
+  def namedType: NamedType
+
+  given RttiProvider[OntologyEnum[Self]] = 
+    RttiProvider.provide(namedType)
+
+
