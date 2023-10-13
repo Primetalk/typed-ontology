@@ -34,5 +34,5 @@ jobs:
     - name: Run tests
       run: sbt test
       # Optional: This step uploads information to the GitHub dependency graph and unblocking Dependabot alerts for the repository
-    - name: Upload dependency graph
-      uses: scalacenter/sbt-dependency-submission@v2.2.0
+    # - name: Upload dependency graph
+    #   uses: scalacenter/sbt-dependency-submission@v2.2.0
