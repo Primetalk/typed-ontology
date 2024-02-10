@@ -7,7 +7,6 @@ import compiletime.ops.int._
 
 class PersonSpec:
 
-
   abstract final class Person
 
   object personProps extends RecordSchemaBuilder[Person]:
@@ -15,23 +14,23 @@ class PersonSpec:
     // val age = property[Int]("age")
     // val title = property[String]("title")
     // val baseSchema = fields2(id, name)
-    object name extends SimplePropertyId[Person, String]("name", summon)
-    object age extends SimplePropertyId[Person, Int]("age", summon)
+    object name  extends SimplePropertyId[Person, String]("name", summon)
+    object age   extends SimplePropertyId[Person, Int]("age", summon)
     object title extends SimplePropertyId[Person, String]("title", summon)
     // val age = property[Int]("age")// : SimplePropertyId[Record[Person], Int]
     // val title = property[String]("title")
     // val nameSchema: SchemaCons[name.type, EmptySchema] = fields[name.type](name)
-    // val nameSchema: SchemaCons[name.type, EmptySchema] = 
+    // val nameSchema: SchemaCons[name.type, EmptySchema] =
     //   RecordSchema.empty.append(name)
-    val baseSchema = fields2(name, age)//RecordSchema.empty.prepend(age).prepend(name)// name #: 
-    val schema2 = fields(name, age)
+    val baseSchema = fields2(name, age) // RecordSchema.empty.prepend(age).prepend(name)// name #:
+    val schema2    = fields(name, age)
     // val schema2 = tupleToSchema((name, age))
-  
+
   @Test def schemaTest =
     type UnOption[O <: Option[?], P] <: Any = O match
       case Option[P] => Int
       case Option[_] => String
-      case _ => Double
+      case _         => Double
 
     // val i: UnOption[Option[String], String] = 1
     // val h: UnOption[Option[String], Int] = ""
@@ -40,9 +39,9 @@ class PersonSpec:
     // val ns: RecordSchema {
     //   type R = Person | Nothing
     // } = personProps.nameSchema
-    implicit val bs = personProps.baseSchema
+    implicit val bs        = personProps.baseSchema
     val person1: bs.Values = bs.values(("Vasya", 20))
-    val (v: String, _) = person1 
+    val (v: String, _)     = person1
     assert(v == "Vasya")
     // val person1v = bs.values(("Vasya", 20))
     // assert(person1v(0) == "Vasya")

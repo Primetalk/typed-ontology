@@ -11,11 +11,11 @@ import ru.primetalk.typed.ontology.metameta.OntologyType.scalarRtti
 class OntExampleSpec extends BaseSpec:
 
   object Person extends SelfSchemaBuilder:
-    object name extends scalarColumn[String]
-    object age extends scalarColumn[Int]
+    object name  extends scalarColumn[String]
+    object age   extends scalarColumn[Int]
     object title extends scalarColumn[String]
     val namedType = namedEntityType(name, age, title)
 
   "simple example" should "compile" in {
-    Person.name.name should equal ("name")
+    Person.name.name should equal("name")
   }

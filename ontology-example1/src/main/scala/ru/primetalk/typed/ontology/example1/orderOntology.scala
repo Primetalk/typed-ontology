@@ -8,17 +8,17 @@ object Product extends TableBuilder:
   object id    extends column[Int]
   object name  extends column[String]
   object price extends column[BigInt]
-  
+
   type TableSchema = id.type #: name.type #: price.type #: EmptySchema
   val tableSchema: TableSchema = fields(id, name, price)
-  val idNameSchema = fields(id, name)
-  val primaryKeySchema = fields(id)
+  val idNameSchema             = fields(id, name)
+  val primaryKeySchema         = fields(id)
 
 object Order extends TableBuilder:
   object id   extends column[Int]
   object date extends column[LocalDateTime]
   type TableSchema = id.type #: date.type #: EmptySchema
-  val tableSchema: TableSchema  = fields(id, date)
+  val tableSchema: TableSchema = fields(id, date)
 
 object OrderItem extends TableBuilder:
   object id        extends column[Int]
@@ -28,7 +28,7 @@ object OrderItem extends TableBuilder:
 
   type TableSchema = id.type #: orderId.type #: productId.type #: EmptySchema
   val tableSchema = infer[TableSchema]
-  // val tableSchema: TableSchema = id #: orderId #: productId #: EmptySchema 
+  // val tableSchema: TableSchema = id #: orderId #: productId #: EmptySchema
 
   type SmallerSchema = id.type #: orderId.type #: EmptySchema
   val smallerSchema: SmallerSchema = infer[SmallerSchema]

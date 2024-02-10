@@ -17,9 +17,9 @@ class MacroTestSpec:
     type TableSchema = id.type #: name.type #: EmptySchema
     val tableSchema = fields2(id, name)
 
-  @Test def constructTest: Unit = 
+  @Test def constructTest: Unit =
     val res = example1[Product.tableSchema.type](Product.tableSchema)
     println(res)
     // assert(res == "", s"r=$res")
-    
-  transparent inline def example1[S1 <: RecordSchema](inline s1: S1) = ${exampleImpl[S1]('s1)}
+
+  transparent inline def example1[S1 <: RecordSchema](inline s1: S1) = ${ exampleImpl[S1]('s1) }
