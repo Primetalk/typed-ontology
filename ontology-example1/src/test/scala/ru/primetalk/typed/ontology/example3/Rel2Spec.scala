@@ -18,13 +18,15 @@ import cats.Applicative
 
 trait TestDataRel2 extends BaseSpec:
   val product1: Product.Row = (1, "product1", BigInt(5))
+  val (product1id, _, _) = product1
   val product2: Product.Row = (2, "product2", BigInt(20))
+  val (product2id, _, _) = product2
   val products = Product.relation(List(product1, product2))
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
   val orders = Order.relation(List(order1))
-  val orderItem1: OrderItem.Row = (1,1,product1(0))
-  val orderItem2: OrderItem.Row = (2,1,product1(0))
-  val orderItem3: OrderItem.Row = (3,1,product2(0))
+  val orderItem1: OrderItem.Row = (1,1,product1id)
+  val orderItem2: OrderItem.Row = (2,1,product1id)
+  val orderItem3: OrderItem.Row = (3,1,product2id)
   val orderItems = OrderItem.relation(List(orderItem1,orderItem2, orderItem3))
 
 class Rel2Spec extends TestDataRel2:
@@ -86,7 +88,7 @@ class Rel2Spec extends TestDataRel2:
   }
   test("Extension methods to read/write property values"){
     import products.schema._
-    products.rows.head(Product.name) should equal("product1")
+    (products.rows.head).apply(Product.name) should equal("product1")
     val product1updated = products.rows.head.updated(Product.name)("new name")
     product1updated(Product.name) should equal("new name")
   }
@@ -158,7 +160,7 @@ class Rel2Spec extends TestDataRel2:
     // SELECT product.name, sum(product.price) 
     // FROM order_item JOIN product ON order_item.product_id = product.id
     // WHERE order_item.order_id = ?
-    def expensesReport[V[_], 
+    transparent inline def expensesReport[V[_], 
       P <: products.Self,
       OI <: orderItems.Self,
       ](product: P, orderItem: OI) = 
@@ -170,7 +172,7 @@ class Rel2Spec extends TestDataRel2:
         val aggregateSchema = sumPrice #: EmptySchema
         val aggregateISchema = Product.price #: EmptySchema
         // val resultSchema = keySchema.concat(aggregateSchema)
-        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val keyF = keySchema.projectorFrom[joined.Schema](joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
         val reduced1 = joined.groupMapReduce(keyF)(priceAsSumPrice)
         reduced1 should equal(SortedMap(
@@ -218,8 +220,8 @@ class Rel2Spec extends TestDataRel2:
         // val vals = convertSortedMapToV[List, keySchema.type, aggregateSchema.type](keySchema, aggregateSchema)(reduced1)
         val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
         // concat
-        val allVals: Iterable[resultSchema.Values] = reduced1.toIterable.map(concat(_, _))
-        import cats.MonoidK.ops.toAllMonoidKOps
+        val allVals: Seq[resultSchema.Values] = reduced1.toSeq.map(concat(_, _))
+        import cats.syntax.semigroupk.toSemigroupKOps
         val vals = allVals.foldLeft(MonoidK[List].empty[resultSchema.Values])((b, a) => b <+> Applicative[List].pure(a))
         Relation.apply(resultSchema)(vals)
 
@@ -253,7 +255,7 @@ class Rel2Spec extends TestDataRel2:
         val resultSchema = keySchema.concat(aggregateISchema)
         val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
-        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(keyF, priceAsSumPrice)
         reduced1
 
     val result = expensesReport(products, orderItems, 1)
@@ -291,7 +293,7 @@ class Rel2Spec extends TestDataRel2:
         val resultSchema = keySchema.concat(aggregateISchema)
         val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
-        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(keyF, priceAsSumPrice)
         reduced1
 
     val result = expensesReport(products, orderItems, 1)
@@ -323,9 +325,9 @@ class Rel2Spec extends TestDataRel2:
         // val aggregateSchema = sumPrice #: EmptySchema
         val aggregateISchema = Product.price #: EmptySchema
         val resultSchema = keySchema.concat(aggregateISchema)
-        val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
+        val keyF = keySchema.projectorFrom[joined.Schema](joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
-        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(keyF, priceAsSumPrice)
         reduced1
 
     val result = expensesReport(products, orderItems, 1)

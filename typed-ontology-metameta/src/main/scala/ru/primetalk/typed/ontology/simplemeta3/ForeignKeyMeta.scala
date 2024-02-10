@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.simplemeta3
 
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 
 sealed trait ForeignKeyId0:
   type Left <: RecordProperty0
@@ -37,6 +37,6 @@ object JointSchema:
   transparent inline def join[
     S1 <: RecordSchema,
     S2 <: RecordSchema
-  ](inline schema1: S1, inline schema2: S2) =
+  ](schema1: S1, schema2: S2) =
     val joinSchema = schema1.concat(schema2)
     JointSchema(schema1, schema2)(joinSchema)

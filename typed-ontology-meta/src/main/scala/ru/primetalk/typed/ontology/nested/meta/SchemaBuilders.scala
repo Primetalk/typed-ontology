@@ -9,10 +9,10 @@ import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.NamedType
 import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.EnumType
 import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation
 import ru.primetalk.typed.ontology.metameta.RttiProvider
-import ru.primetalk.typed.ontology.metameta.OntologyEnum
+import ru.primetalk.typed.ontology.metameta.OntologyType.OntologyEnum
 import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.EnumValue
 import ru.primetalk.typed.ontology.utils.objectName
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 
 trait RecordSchemaBuilderBase:
   type RecordType

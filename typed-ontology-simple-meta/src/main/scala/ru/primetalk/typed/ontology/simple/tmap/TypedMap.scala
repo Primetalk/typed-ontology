@@ -19,7 +19,7 @@ extension [M[_], R](tm: M[R])(using TypedMap[M])
   def updated[P <: RecordProperty[R]](p: P, v: Option[RecordProperty0.PropertyValueType[p.type]]): M[R] =
     summon[TypedMap[M]].updated(tm)(p, v)
 
-opaque type SimpleTypedMap[R] = SortedMap[String, Any]
+opaque type SimpleTypedMap[R] = Map[String, Any]
 
 object SimpleTypedMap:
   given TypedMap[SimpleTypedMap] with

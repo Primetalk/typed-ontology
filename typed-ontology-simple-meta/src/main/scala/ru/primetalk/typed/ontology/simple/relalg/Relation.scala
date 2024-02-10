@@ -34,7 +34,7 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     type Row = self.Row
   }
   def show(using Foldable[V]) =
-    import cats.Foldable.ops.toAllFoldableOps
+    import cats.syntax.foldable.given
 
     schema.toString + 
       "\n-----\n" + 
@@ -43,14 +43,15 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
         .reverse
         .mkString("\n")
 
-  transparent inline def projection[S2 <: RecordSchema](inline s2: S2)(using Functor[V]) =
-    import cats.Functor.ops.toAllFunctorOps
+  transparent inline def projection[S2 <: RecordSchema](s2: S2)(using Functor[V]) =
+    import cats.syntax.functor.given
     val f = s2.projectorFrom(schema)
     val vals = rows.map(f)
     Relation(s2)(vals)
 
-  transparent inline def crossProductFrom[R1 <: Relation[V]](inline r1: R1)(using FlatMap[V]): Relation[V] =
-    import cats.FlatMap.ops.toAllFlatMapOps
+  transparent inline def crossProductFrom[R1 <: Relation[V]](r1: R1)(using FlatMap[V]): Relation[V] =
+    import cats.syntax.flatMap.given
+    import cats.syntax.functor.given
     val schema3 = r1.schema.appendOtherSchema(schema)
     val concatValues: (r1.schema.Values, schema.Values) => schema3.Values = r1.schema.appendValues(schema)(schema3)
     val vals = 
@@ -61,8 +62,9 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
         concatValues(row1, row2)
     Relation(schema3)(vals)
 
-  transparent inline def crossProduct[R2 <: Relation[V]](inline r2: R2)(using FlatMap[V]) =
-    import cats.FlatMap.ops.toAllFlatMapOps
+  transparent inline def crossProduct[R2 <: Relation[V]](r2: R2)(using FlatMap[V]) =
+    import cats.syntax.flatMap.given
+    import cats.syntax.functor.given
     val schema3 = schema.appendOtherSchema(r2.schema)
     val f: (schema.Values, r2.schema.Values) => schema3.Values = schema.appendValues(r2.schema)(schema3)
     val vals = 
@@ -73,9 +75,10 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
         f(row1, row2)
     Relation[schema3.type, V](schema3)(vals)
 
-  transparent inline def join[FK <: ForeignKeyId0, R2 <: Relation[V]](inline fk: FK)(inline r2: R2)(using FlatMap[V])(using FunctorFilter[V]) = 
-    import cats.FlatMap.ops.toAllFlatMapOps
-    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+  transparent inline def join[FK <: ForeignKeyId0, R2 <: Relation[V]](inline fk: FK)(r2: R2)(using FlatMap[V])(using FunctorFilter[V]) = 
+    import cats.syntax.flatMap.given
+    import cats.syntax.functor.given
+    import cats.syntax.functorFilter.given
     val schema3 = schema.appendOtherSchema(r2.schema)
     val concatValues: (schema.Values, r2.schema.Values) => schema3.Values = 
       schema.appendValues(r2.schema)(schema3)
@@ -91,12 +94,13 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     val filtered = vals.filter(pred)
     Relation[schema3.type, V](schema3)(filtered)
 
-  transparent inline def prependCalcColumn[P <: RecordProperty0](inline p: P)(inline f: Row => p.P)(using FlatMap[V]) =
-    import cats.FlatMap.ops.toAllFlatMapOps
+  transparent inline def prependCalcColumn[P <: RecordProperty0](p: P)(inline f: Row => p.P)(using FlatMap[V]) =
+    import cats.syntax.flatMap.given
+    import cats.syntax.functor.given
     val schema3 = p #: schema
     val vals = rows.map(row => (f(row) *: row).asInstanceOf[schema3.Values])
     Relation(schema3)(vals)
-  transparent inline def prependCalcColumnF[P <: RecordProperty0](inline p: P)(inline f: RelExpr[p.P])(using FlatMap[V]) =
+  transparent inline def prependCalcColumnF[P <: RecordProperty0](p: P)(inline f: RelExpr[p.P])(using FlatMap[V]) =
     prependCalcColumn(p)(rowFun(f))
 
   transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](inline p1: P1, p2: P2)(using Functor[V]) =
@@ -104,7 +108,7 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     val vals = rows.asInstanceOf[V[schema3.Values]] // to avoid iteration and map
     Relation[schema3.type, V](schema3)(vals)
 
-  transparent inline def ++[R2 <: Relation[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using SemigroupK[V])(using Functor[V]) =
+  transparent inline def ++[R2 <: Relation[V]](r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using SemigroupK[V])(using Functor[V]) =
     import cats.syntax.all.toSemigroupKOps
     // val vals = rows <+> r2.rows.map(ev)
     // to avoid iteration and map we cast:
@@ -115,19 +119,19 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     Relation(schema)(f(rows))
 
   transparent inline def filter(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
-    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    import cats.syntax.functorFilter.given
     replaceRows(_.filter(predicate))
   // TODO: try optimizing withFilter
   transparent inline def withFilter(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
-    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    import cats.syntax.functorFilter.given
     replaceRows(_.filter(predicate))
 
   transparent inline def filterNot(inline predicate: Row => Boolean)(using FunctorFilter[V]) =
-    import cats.FunctorFilter.ops.toAllFunctorFilterOps
+    import cats.syntax.functorFilter.given
     replaceRows(_.filterNot(predicate))
 
   /** NB: O(N + M ln M), N = rows.size, M = R2.rows.size */
-  transparent inline def --[R2 <: Relation[V]](inline r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using Foldable[V])(using FunctorFilter[V]) =
+  transparent inline def --[R2 <: Relation[V]](r2: R2)(using ev: r2.schema.Values =:= schema.Values)(using Foldable[V])(using FunctorFilter[V]) =
     import cats.syntax.all.toFoldableOps
     val set2 = r2.rows.asInstanceOf[V[Row]].foldLeft(Set[Row]())(_ + _)
     filterNot(set2.contains)
@@ -147,7 +151,7 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
         case None    => m + (k -> app.pure(f(elem)))
       }
     )
-  final def groupMapReduce[K, B](key: Row ⇒ K)(f: Row ⇒ B)(using K: Order[K], S: Semigroup[B])(using Foldable[V]): SortedMap[K, B] = 
+  final def groupMapReduce[K, B](key: Row => K)(f: Row => B)(using K: Order[K], S: Semigroup[B])(using Foldable[V]): SortedMap[K, B] = 
     groupMapReduceWith(key)(f)(S.combine)
     
   final def groupMapReduceWith[K, B](key: Row => K)(f: Row => B)(combine: (B, B) => B)(using K: Order[K])(using Foldable[V]): SortedMap[K, B] = 
@@ -172,10 +176,10 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     KeySchema <: RecordSchema,
     AggregateSchema <: RecordSchema
     ](
-    inline keySchema: KeySchema,
-    inline aggregateSchema: AggregateSchema
-    )(
-      inline resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type],//inline schema3: RecordSchema.Concat[this.type, schema2.type]
+    keySchema: KeySchema,
+    aggregateSchema: AggregateSchema
+    // )(
+    //   resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type],//inline schema3: RecordSchema.Concat[this.type, schema2.type]
     )(
       inline k: Row => keySchema.Values,
       inline m: Row => aggregateSchema.Values
@@ -188,12 +192,12 @@ abstract class Relation[V[_]] extends ExprClassicDsl:
     //   // type Schema = resultSchema.type
     // }
      = 
-      // (
-      // val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
-      // )
+      
+      val resultSchema = keySchema.concat[aggregateSchema.type](aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
+      
       val grouped = groupMapReduce[keySchema.Values, aggregateSchema.Values](k)(m)
 
-      convertSortedMapToRelation(keySchema, aggregateSchema)(resultSchema)(grouped)
+      convertSortedMapToRelation(keySchema, aggregateSchema)(grouped)
       // val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
       // // concat
       // val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
@@ -206,10 +210,10 @@ transparent inline def convertSortedMapToRelation[
   AggregateSchema <: RecordSchema,
   // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
   ](
-  inline keySchema: KeySchema,
-  inline aggregateSchema: AggregateSchema,
-  )(
-    inline resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type],//inline schema3: RecordSchema.Concat[this.type, schema2.type]
+  keySchema: KeySchema,
+  aggregateSchema: AggregateSchema,
+  // )(
+  //   resultSchema: RecordSchema.Concat[keySchema.type, aggregateSchema.type],//inline schema3: RecordSchema.Concat[this.type, schema2.type]
   )(
     grouped: SortedMap[keySchema.Values, aggregateSchema.Values])
   (using Order[keySchema.Values])
@@ -218,15 +222,16 @@ transparent inline def convertSortedMapToRelation[
   (using Applicative[V])
   (using Foldable[V])
   : Relation[V]{
-    type Schema = resultSchema.type
+    type Schema <: RecordSchema.Concat[keySchema.type, aggregateSchema.type]
   }
     = 
+    val resultSchema = keySchema.concat[aggregateSchema.type](aggregateSchema)
     val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
-    val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
+    val allVals: Seq[resultSchema.Values] = grouped.toSeq.map(concat(_, _))
     val vals: V[resultSchema.Values] = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
       (b, a) => 
       MonoidK[V].combineK(b, Applicative[V].pure(a)))
-    Relation.apply[RecordSchema.Concat[keySchema.type, aggregateSchema.type], V](resultSchema)(vals)
+    Relation.apply[resultSchema.type, V](resultSchema)(vals)
     
 transparent inline def convertSortedMapToV[
   V[_],
@@ -234,8 +239,8 @@ transparent inline def convertSortedMapToV[
   AggregateSchema <: RecordSchema
   // ResultSchema <: RecordSchema.Concat[KeySchema, AggregateSchema]
   ](
-  inline keySchema: KeySchema,
-  inline aggregateSchema: AggregateSchema
+  keySchema: KeySchema,
+  aggregateSchema: AggregateSchema
   )
   (grouped: SortedMap[keySchema.Values, aggregateSchema.Values])
   (using Order[keySchema.Values])
@@ -249,14 +254,14 @@ transparent inline def convertSortedMapToV[
     = 
     val resultSchema = keySchema.concat(aggregateSchema)// : RecordSchema.Concat[keySchema.type, aggregateSchema.type]
     val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
-    val allVals: Iterable[resultSchema.Values] = grouped.toIterable.map(concat(_, _))
+    val allVals: Seq[resultSchema.Values] = grouped.toSeq.map(concat(_, _))
     val vals = allVals.foldLeft(MonoidK[V].empty[resultSchema.Values])(
       (b, a) => 
       MonoidK[V].combineK(b, Applicative[V].pure(a)))
     vals
 
 object Relation:
-  transparent inline def apply[S1 <: RecordSchema, V[_]](inline s1: S1)(inline v: V[s1.Values]) =
+  transparent inline def apply[S1 <: RecordSchema, V[_]](s1: S1)(inline v: V[s1.Values]) =
     new Relation[V] {
       type Schema = s1.type
       val schema = s1

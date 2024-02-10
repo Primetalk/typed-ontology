@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology.simplemeta2
 
 import scala.reflect.ClassTag
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 
 sealed trait RecordProperty0:
   type R
@@ -32,5 +32,5 @@ object RecordProperty0:
     case _ => Nothing
 
 trait PropertiesBuilder extends RecordSchemaBuilderBase:
-  transparent inline def property[T: ClassTag](inline name: String) = 
+  transparent inline def property[T: ClassTag](name: String) = 
     new SimplePropertyId[RecordType, T](name, summon){}

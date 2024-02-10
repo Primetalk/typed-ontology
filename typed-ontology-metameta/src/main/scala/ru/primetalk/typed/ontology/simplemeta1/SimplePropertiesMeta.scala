@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology.simplemeta1
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import scala.reflect.ClassTag
 import scala.quoted.*
 import scala.annotation.transparentTrait
@@ -94,12 +94,16 @@ extension [R, S <: RecordSchema[R]](schema: S)
       val properties: Properties = p *: schema.properties
       val parentSchemaOrNothing: ParentSchemaOrNothing = schema
       def get[A, P2 <: SimplePropertyId[Record[R], A]](p2: P2)(v: Values): Option[A] = 
-        if p2 == p then
-          Some(v.head.asInstanceOf[A])
-        else
-          schema.get(p2)(v.tail)
+        v match
+          case head *: tail =>
+            if p2 == p then
+              Some(head.asInstanceOf[A])
+            else
+              schema.get(p2)(tail)
       def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] =
-        schema.convertToMap(v.tail, m.updated(p.name, v.head))
+        v match
+          case head *: tail =>
+            schema.convertToMap(tail, m.updated(p.name, head))
 
 extension [D <: Tuple](t: D)
   def get[T, R, P <: SimplePropertyId[Record[R], T]](p: P)(using schema: RecordSchema[R])(using ev: D =:= schema.Values): Option[T] =

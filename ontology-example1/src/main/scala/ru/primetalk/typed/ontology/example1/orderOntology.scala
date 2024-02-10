@@ -1,7 +1,7 @@
 package ru.primetalk.typed.ontology.example1
 
 import ru.primetalk.typed.ontology.simple.meta._
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import java.time.LocalDateTime
 
 object Product extends TableBuilder:

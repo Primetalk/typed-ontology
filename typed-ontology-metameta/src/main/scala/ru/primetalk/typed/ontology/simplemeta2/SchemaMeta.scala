@@ -6,7 +6,7 @@
 package ru.primetalk.typed.ontology.simplemeta2
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import scala.quoted.*
 import scala.reflect.ClassTag
 import scala.compiletime.ops.int.S
@@ -45,9 +45,9 @@ sealed trait RecordSchema:
   def isEmpty: Boolean
   def values(v: Values): Values = v
 
-  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](inline p2: P2): IndexOfProp[p2.type]
+  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](p2: P2): IndexOfProp[p2.type]
   
-  transparent inline def concat[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
+  transparent inline def concat[This >: this.type <: RecordSchema, S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[This, schema2.type] =
     inline this match
       case _: EmptySchema => 
         schema2
@@ -77,7 +77,7 @@ case object EmptySchema extends RecordSchema:
 
   def unapply(e: EmptySchema): true = true
 
-  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](inline p2: P2): IndexOfProp[p2.type] = 
+  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](p2: P2): IndexOfProp[p2.type] = 
     RecordSchema.indexOfProp(this, p2)
 
 
@@ -90,17 +90,21 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   val properties: Properties = p *: schema.properties
   def parentSchemaOrNothing: ParentSchemaOrNothing = schema
   def get[P2 <: RecordProperty0](p2: P2)(v: Values): Option[p2.P] = 
-    if p2 == p then
-      Some(v.head.asInstanceOf[p2.P])
-    else
-      schema.get(p2)(v.tail)
+    v match
+      case head *: (tail: schema.Values) =>
+        if p2 == p then
+          Some(head.asInstanceOf[p2.P])
+        else
+          schema.get(p2)(tail)
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] =
-    schema.convertToMap(v.tail, m.updated(p.name, v.head))
+    v match
+      case head *: (tail: schema.Values) =>
+        schema.convertToMap(tail, m.updated(p.name, head))
   def isEmpty: Boolean = false
 
   def unapply[This >: this.type <: SchemaCons[P, S]]: Unapply[This] =
     Some((p, schema))
-  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](inline p2: P2): IndexOfProp[p2.type] = 
+  transparent inline def indexOfProp[P2 <: RecordProperty0, This >: this.type <: RecordSchema](p2: P2): IndexOfProp[p2.type] = 
     RecordSchema.indexOfProp(this, p2)
     // 0.asInstanceOf[IndexOfProp[This, p2.type, 0]]//constValue[IndexOfProp[This, p2.type, 0]]
 
@@ -131,8 +135,8 @@ object RecordSchema:
     case SchemaCons[_, s] => PropByProp[s, P]
 
   
-  transparent inline def indexOfProp[X <: RecordSchema, P <: RecordProperty0](inline schema: X, inline property: P): schema.IndexOfProp[P] = 
-    constValue[schema.IndexOfProp[P]]
+  transparent inline def indexOfProp[X <: RecordSchema, P <: RecordProperty0](schema: X, property: P): schema.IndexOfProp[property.type] = 
+    constValue[schema.IndexOfProp[property.type]]
 
   /** Type of the concatenation of two schemas. */
   type Concat[X <: RecordSchema, Y <: RecordSchema] <: RecordSchema = 

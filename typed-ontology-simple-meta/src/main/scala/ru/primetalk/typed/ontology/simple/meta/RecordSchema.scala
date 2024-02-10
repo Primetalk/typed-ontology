@@ -5,8 +5,7 @@
   */
 package ru.primetalk.typed.ontology.simple.meta
 
-import scala.language.higherKinds
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import scala.quoted.*
 import scala.quoted.Expr.ofList
 
@@ -19,6 +18,7 @@ import scala.compiletime.constValueTuple
 import java.sql.ResultSet
 import scala.annotation.targetName
 import scala.runtime.Tuples
+import scala.NonEmptyTuple
 
 /** 
   * Schema of properties for a record R.
@@ -40,7 +40,7 @@ sealed trait RecordSchema:
   type PropertiesMap[F[_]] = Tuple.Map[Properties, F]
   
   type IndexOfProp[P <: RecordProperty0] = RecordSchema.IndexOfTypeInTuple[Properties, P]
-  transparent inline def indexOfProp[P2 <: RecordProperty0](inline p2: P2): IndexOfProp[p2.type] =
+  transparent inline def indexOfProp[P2 <: RecordProperty0](inline p2: P2): IndexOfProp[P2] =
     RecordSchema.indexOfProp(this, p2)
 
   /** Returns the tuple made of indices of properties of another schema.
@@ -49,12 +49,12 @@ sealed trait RecordSchema:
     S2 match
       case EmptySchema      => EmptyTuple
       case SchemaCons[p, s] => IndexOfProp[p] *: IndicesOfProps[s]
-  transparent inline def indicesOfProps[S2 <: RecordSchema](inline s2: S2): IndicesOfProps[s2.type] = 
+  transparent inline def indicesOfProps[S2 <: RecordSchema](s2: S2): IndicesOfProps[s2.type] = 
     constValueTuple[IndicesOfProps[s2.type]]
 
   /** Concatenates properties of another schema. */
   // transparent inline def concat[S2 <: RecordSchema, This >: this.type <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
-  inline def concat[S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[this.type, schema2.type] =
+  inline def concat[S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[this.type, S2] =
     inline this match
       case _: EmptySchema => 
         schema2
@@ -92,7 +92,7 @@ sealed trait RecordSchema:
 
   type Remove[P1<:RecordProperty0] <: RecordSchema
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type]
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[P1]
 
 
 
@@ -116,36 +116,53 @@ sealed trait RecordSchema:
         RecordSchema.ValueAt[this.type, I]
       case _ => 
         Nothing
-  transparent inline def getByIndex[I <: Int](inline i: I)(v: Values): ValueAt[I] =
-    RecordSchema.valueAt(this, i)(v)
+  transparent inline def getByIndex[I <: Int](inline i: I): Values => ValueAt[I] = v =>
+    RecordSchema.valueAt[this.type, I](this, i)(v)
 
   def getByIndexRuntime(i: Int)(v: Values): Any =
     scala.runtime.Tuples.apply(v.asInstanceOf[NonEmptyTuple], i)
 
-  transparent inline def concatValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: RecordSchema.Concat[this.type, schema2.type]): (Values, schema2.Values) => schema3.Values = 
+  transparent inline def concatValues[S2 <: RecordSchema](schema2: S2)(schema3: RecordSchema.Concat[this.type, S2]): (Values, schema2.Values) => schema3.Values = 
       (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
-  transparent inline def prependValues[S1 <: RecordSchema](inline schema1: S1)(inline schema3: PrependOtherSchema[S1]): (schema1.Values, Values) => schema3.Values = 
+  transparent inline def prependValues[S1 <: RecordSchema](schema1: S1)(schema3: PrependOtherSchema[S1]): (schema1.Values, Values) => schema3.Values = 
     (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
-  transparent inline def appendValues[S2 <: RecordSchema](inline schema2: S2)(inline schema3: AppendOtherSchema[S2]): (Values, schema2.Values) => schema3.Values =
+  transparent inline def appendValues[S2 <: RecordSchema](schema2: S2)(schema3: AppendOtherSchema[S2]): (Values, schema2.Values) => schema3.Values =
     (v1, v2) => (v1 ++ v2).asInstanceOf[schema3.Values]
 
   type PropertyGetter[P <: RecordProperty0] = 
-    Values => RecordProperty0.PropertyValueType[P]
+    RecordSchema.IsPropertyInSchema[P, this.type] match
+      case true =>
+        Values => RecordProperty0.PropertyValueType[P]
+      case false =>
+        Values => Nothing
+
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
-    P <: RecordProperty0](inline p: P): PropertyGetter[p.type]
+    P <: RecordProperty0](p2: P): RecordSchema.PropertyGetter[Values, p2.type]
+
+  type PropertyGetter2[P <: RecordProperty0] <: Values => RecordProperty0.PropertyValueType[P] = 
+    this.type match
+      case EmptySchema        => Nothing
+      case SchemaCons[`P`, _] => Values => RecordProperty0.PropertyValueType[P]
+      case SchemaCons[_  , s] => Values => RecordProperty0.PropertyValueType[P]
+
+  // transparent inline def propertyGetter2[P <: RecordProperty0](p: P): PropertyGetter2[p.type] = 
+  //   inline this match
+  //     case _ : EmptySchema => scala.compiletime.error(s"property $p not found")
+  //     case sc : SchemaCons[`P`, _] => (v: Values) => sc.v.head.asInstanceOf[RecordProperty0.PropertyValueType[p.type]]
+  //     case sc : SchemaCons[_, s] => (v: Values) => v.tail.asInstanceOf[s.Values]
 
   type PropertyUpdater[P <: RecordProperty0] = 
     Values => RecordProperty0.PropertyValueType[P] => Values
   transparent inline def propertyUpdater[
     This >: this.type <: RecordSchema, 
-    P <: RecordProperty0](inline p: P): PropertyUpdater[p.type]
+    P <: RecordProperty0](inline p: P): PropertyUpdater[P]
 
-  transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values
+  transparent inline def projectorFrom[S1 <: RecordSchema](s1: S1): s1.Values => Values
 
-  transparent inline def projection[S2 <: RecordSchema](inline schema2: S2): Values => schema2.Values = 
+  transparent inline def projection[S2 <: RecordSchema](inline schema2: S2): Any =//Values => S2#Values = 
     schema2.projectorFrom(this)
 
   type OptionValues = ValuesMap[Option]
@@ -156,15 +173,15 @@ sealed trait RecordSchema:
 
   transparent inline def transformEither[E]: EitherValues[E] => Either[List[E], Values]
   
-  transparent inline def fkPredicate[FK <: ForeignKeyId0](inline fk: FK): Values => Boolean = 
+  transparent inline def fkPredicate[FK <: ForeignKeyId0](fk: FK): Values => Boolean = 
     val l = propertyGetter(fk.left)
     val r = propertyGetter(fk.right)
     row => l(row) == r(row)
 
   extension (values: Values)
-    transparent inline def apply[P <: RecordProperty0](inline p: P) = 
+    transparent inline def apply[P <: RecordProperty0](p: P) = 
       self.propertyGetter(p)(values)
-    transparent inline def updated[P <: RecordProperty0](inline p: P)(inline v: RecordProperty0.PropertyValueType[p.type]) = 
+    transparent inline def updated[P <: RecordProperty0](inline p: P)(inline v: RecordProperty0.PropertyValueType[P]) = 
       self.propertyUpdater(p)(values)(v)
 
 type EmptySchema = EmptySchema.type
@@ -189,7 +206,7 @@ case object EmptySchema extends RecordSchema:
 
   type Remove[P1<:RecordProperty0] = EmptySchema
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type] = EmptySchema
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[P1] = EmptySchema
 
   def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]] = 
     None
@@ -198,14 +215,19 @@ case object EmptySchema extends RecordSchema:
 
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
-    P<: RecordProperty0](inline p: P): PropertyGetter[p.type] = 
-      sys.error(s"There is no property getter for $p in empty schema")
+    P <: RecordProperty0](p2: P): RecordSchema.PropertyGetter[Values, p2.type] = 
+      sys.error(s"There is no property getter for $p2 in empty schema")
+      // ${propertyGetterImpl[This, this.Values, p2.type]('this, 'p2)}
+  // transparent inline def propertyGetter[
+  //   This >: this.type <: RecordSchema, 
+  //   P<: RecordProperty0](p: P): PropertyGetter[p.type] = 
+  //     sys.error(s"There is no property getter for $p in empty schema")
   transparent inline def propertyUpdater[
     This >: this.type <: RecordSchema, 
-    P <: RecordProperty0](inline p: P): PropertyUpdater[p.type] = 
+    P <: RecordProperty0](inline p: P): PropertyUpdater[P] = 
       sys.error(s"There is no property updater for $p in empty schema")
 
-  transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =
+  transparent inline def projectorFrom[S1 <: RecordSchema](s1: S1): s1.Values => Values =
     _ => EmptyTuple
   transparent inline def transformOption: OptionValues => Option[Values] =
     _ => Some(EmptyTuple)
@@ -224,36 +246,49 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 
   type ParentSchemaOrNothing = schema.type
   type Properties = p.type *: schema.Properties
+  type PValue = RecordProperty0.PropertyValueType[Tuple.Head[Properties]]// p.type
   val properties: Properties = p *: schema.properties
   def parentSchemaOrNothing: ParentSchemaOrNothing = schema
   def get[P2](p2: P2)(v: Values): Option[RecordProperty0.PropertyValueType[p2.type]] = 
+    val head *: (tail : schema.Values) = v
     if p2 == p then
-      Some(v.head.asInstanceOf[RecordProperty0.PropertyValueType[p2.type]])
+      Some(head.asInstanceOf[RecordProperty0.PropertyValueType[p2.type]])
     else
-      schema.get(p2)(v.tail)
+      schema.get(p2)(tail)
+
+  transparent inline def get3(p1: p.type)(v: Values): PValue =
+    v.head.asInstanceOf[PValue]
+
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] =
-    schema.convertToMap(v.tail, m.updated(p.name, v.head))
+    val head *: (tail : schema.Values) = v
+    schema.convertToMap(tail, m.updated(p.name, head))
 
   def unapply[This >: this.type <: SchemaCons[P, S]]: Unapply[This] =
-    Some((p, schema))
-
+    this match
+      // case _: EmptySchema      => None
+      case _: SchemaCons[p, s] => 
+        Some((p, schema))
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
-    P <: RecordProperty0](inline p: P): PropertyGetter[p.type] =
-    val i = indexOfProp(p)
-    _.apply(i).asInstanceOf[RecordProperty0.PropertyValueType[p.type]]////Tuple.Elem[Values, IndexOfProp[p.type]]]
+    P <: RecordProperty0](p2: P): RecordSchema.PropertyGetter[Values, p2.type] = 
+      ${propertyGetterImpl[This, this.Values, p2.type]('this, 'p2)}
+
+    // val i: Int = indexOfProp(p2)
+    // (values: Values) => 
+    //   val res: Any = values.asInstanceOf[NonEmptyTuple].apply(i)
+    //   res.asInstanceOf[RecordProperty0.PropertyValueType[p2.type]]////Tuple.Elem[Values, IndexOfProp[p.type]]]
   transparent inline def propertyUpdater[
     This >: this.type <: RecordSchema, 
-    P <: RecordProperty0](inline p: P): PropertyUpdater[p.type] = 
+    P <: RecordProperty0](inline p: P): PropertyUpdater[P] = 
     val i = indexOfProp(p)
     values => newPropertyValue =>
       val arr = Tuples.toIArray(values)
       val updatedArray = arr.updated(i, newPropertyValue.asInstanceOf[Object])
       Tuples.fromIArray(updatedArray).asInstanceOf[Values]
-    
+
   // TODO: construct a tuple expression that will return result at once, without the need to reconstruct multiple tuples along the way.
-  transparent inline def projectorFrom[S1 <: RecordSchema](inline s1: S1): s1.Values => Values =
-    val fp = s1.propertyGetter(p) // : s1.Values => RecordProperty0.PropertyValueType[p.type]
+  transparent inline def projectorFrom[S1 <: RecordSchema](s1: S1): s1.Values => Values =
+    val fp = s1.propertyGetter[S1, p.type](p) // : s1.Values => RecordProperty0.PropertyValueType[p.type]
     val fschema: s1.Values => schema.Values = schema.projectorFrom(s1)
     (v: s1.Values) => fp(v) *: fschema(v)
 
@@ -271,33 +306,39 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
       case P => S
       case _ => SchemaCons[P, schema.Remove[P1]]
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[p1.type] =
+  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[P1] =
     inline p1 match
       case _: P => schema
       case _    => SchemaCons(p, schema.remove(p1))
 
   transparent inline def transformOption: OptionValues => Option[Values] =
-    val schemaTransformOption = schema.transformOption
+    val schemaTransformOption: schema.OptionValues => Option[schema.Values] = schema.transformOption
     ov => 
       ov match
         case None    *: t => None
-        case Some(v) *: t =>
+        case Some(v: PValue) *: (t: schema.OptionValues) =>
           val tr = schemaTransformOption(t)
           tr.map(v *: _)
+        case _ => 
+          ???
 
   transparent inline def transformEither[E]: EitherValues[E] => Either[List[E], Values] =
-    val schemaTransformEither = schema.transformEither[E]
+    val schemaTransformEither: schema.EitherValues[E] => Either[List[E], schema.Values] = 
+      schema.transformEither[E]
     ev => 
       ev match
-        case v1 *: t =>
+        case v1 *: (t: schema.EitherValues[E]) =>
           val tr = schemaTransformEither(t)
           v1 match 
-            case Left(e)  =>
+            case Left(e:E)  =>
               tr match
                 case Left(lst) => Left(e :: lst)
                 case Right(_)  => Left(e :: Nil)
-            case Right(v) =>
+            case Right(v:PValue) =>
               tr.map(v *: _)
+
+        case _: EmptyTuple =>
+          ???
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 
@@ -327,13 +368,13 @@ object RecordSchema:
         case 0    => RecordProperty0.PropertyValueType[p]
         case S[n] => ValueAt[s, n]
 
-  transparent inline def valueAt[X <: RecordSchema, I <: Int](inline schema: X, inline i: I)(v: schema.Values): ValueAt[X, I] = 
+  transparent inline def valueAt[X <: RecordSchema, I <: Int](inline schema: X, inline i: I): Any => ValueAt[X, I] = v =>
     scala.runtime.Tuples.apply(v.asInstanceOf[NonEmptyTuple], i).asInstanceOf[ValueAt[X, I]]
 
-  transparent inline def indexOfProp[S1 <: RecordSchema, P <: RecordProperty0](inline schema: S1, inline property: P): schema.IndexOfProp[P] = 
+  transparent inline def indexOfProp[S1 <: RecordSchema, P <: RecordProperty0](schema: S1, inline property: P): schema.IndexOfProp[P] = 
     constValue[schema.IndexOfProp[P]]
 
-  transparent inline def indicesOfProps[S1 <: RecordSchema, S2 <: RecordSchema](inline s1: S1, inline s2: S2): s1.IndicesOfProps[S2] = 
+  transparent inline def indicesOfProps[S1 <: RecordSchema, S2 <: RecordSchema](s1: S1, inline s2: S2): s1.IndicesOfProps[S2] = 
     constValueTuple[s1.IndicesOfProps[S2]]
 
   /** Type of the concatenation of two schemas. */
@@ -364,14 +405,33 @@ object RecordSchema:
       case SchemaCons[P1, st] => st
       case SchemaCons[pt, st] => SchemaCons[pt, Remove[P1, st]] 
 
-  // DOESN'T WORK
-  transparent inline def removeDoesntWork
-    [P1 <: RecordProperty0, S <: RecordSchema]
-    (inline p1: P1, inline schema: S): Remove[P1, S] =
-    inline schema match
-      case EmptySchema        : EmptySchema        => EmptySchema
-      case SchemaCons(`p1`, s): SchemaCons[P1, st] => s
-      case SchemaCons(p,    s): SchemaCons[pt, st] => SchemaCons(p, removeDoesntWork(p1, s)) 
+  type IsPropertyInSchema[P <: RecordProperty0, Schema <: RecordSchema] <: Boolean =
+    Schema match
+      case EmptySchema => false
+      case SchemaCons[`P`, _] => true
+      case SchemaCons[_, s] => IsPropertyInSchema[P, s]
+
+  type PropertyGetter[Values <: Tuple, P <: RecordProperty0] = 
+    Values => RecordProperty0.PropertyValueType[P]
+    // Schema match
+    //   case EmptySchema          => EmptyTuple => Nothing
+    //   case SchemaCons[`P`, s] => `P` *: s#Values => RecordProperty0.PropertyValueType[P]
+    //   case SchemaCons[_, s]     => PropertyGetter[s, P]
+
+    // IsPropertyInSchema[P, Schema] match
+    //   case true =>
+    //     Schema#Values => RecordProperty0.PropertyValueType[P]
+    //   case false =>
+    //     Schema#Values => Nothing
+
+  // // DOESN'T WORK
+  // transparent inline def removeDoesntWork
+  //   [P1 <: RecordProperty0, S <: RecordSchema]
+  //   (inline p1: P1, inline schema: S): Remove[P1, S] =
+  //   inline schema match
+  //     case EmptySchema        : EmptySchema        => EmptySchema
+  //     case SchemaCons(`p1`, s): SchemaCons[P1, st] => s
+  //     case SchemaCons(p,    s): SchemaCons[pt, st] => SchemaCons(p, removeDoesntWork(p1, s)) 
 
 def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] = 
   Expr(a.show)
@@ -379,8 +439,33 @@ def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] =
 def to[T, R: Type](f: Expr[T] => Expr[R])(using t: Type[T])(using Quotes): Expr[T => R] =
   '{ (x: t.Underlying) => ${ f('x) } }
 
-def propertyGetterImpl[V <: NonEmptyTuple, I<:Int](i: Expr[Int])(using vt: Type[V], rt: Type[I])(using Quotes): Expr[V => Tuple.Elem[V, I]] = 
+transparent inline def isPropertyInSchema[P <: RecordProperty0, Schema <: RecordSchema](inline p: P, inline schema: Schema): RecordSchema.IsPropertyInSchema[P, Schema] =
+  inline schema match
+      case _ : EmptySchema        => false
+      case _ : SchemaCons[`P`, _] => true
+      case sc: SchemaCons[_  , s] => isPropertyInSchema[P, s](p, sc.schema)
+
+// def isPropertyInSchemaImpl[P <: RecordProperty0, Schema <: RecordSchema](
+//   schema: Expr[Schema], p2: Expr[P]
+//   )(using pt: Type[P], schemat: Type[Schema])(using Quotes): Expr[RecordSchema.IsPropertyInSchema[P, Schema]] =
+//     import quotes.reflect.*
+//     '{
+//       ${schemat match
+//         case 
+//       }
+//     }
+def propertyGetterImpl[Schema <: RecordSchema, Values <: Tuple, P <: RecordProperty0](
+  schema: Expr[Schema], 
+  p2: Expr[P]
+  )(using pt: Type[P], schemat: Type[Schema], values: Type[Values])(using Quotes): Expr[RecordSchema.PropertyGetter[Values, P]] = 
+  
+      
   '{
-    // import quotes.reflect._
-    (v: V) => v.apply($i).asInstanceOf[Tuple.Elem[V, I]]
+    val propName = s"prop:${($p2)}"
+    if isPropertyInSchema($p2, $schema) then
+      val i: Int = $schema.indexOfProp($p2).asInstanceOf[Int]
+      val f = (v: Values) => (Tuples.apply(v.asInstanceOf[NonEmptyTuple], i).asInstanceOf[ RecordProperty0.PropertyValueType[P]])
+      f.asInstanceOf[RecordSchema.PropertyGetter[Values, P]]
+    else
+      sys.error(s"property $propName is not in schema ${${schema}}")
   }

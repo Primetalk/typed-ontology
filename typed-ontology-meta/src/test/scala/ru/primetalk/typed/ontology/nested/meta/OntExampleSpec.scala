@@ -6,7 +6,7 @@ import org.scalatest.matchers.should
 import org.scalatest.matchers.BeMatcher
 import org.scalatest.matchers.MatchResult
 import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.PlainType.given
-import ru.primetalk.typed.ontology.metameta.scalarRtti
+import ru.primetalk.typed.ontology.metameta.OntologyType.scalarRtti
 
 class OntExampleSpec extends BaseSpec:
 

@@ -30,7 +30,7 @@ class OntologyTest extends FunSuite {
 
   trait AliceData {
     import ru.primetalk.typed.ontology.metameta.toRecordWrapper
-    import ru.primetalk.typed.ontology.metameta.RecordRepresentation
+    import ru.primetalk.typed.ontology.metameta.OntologyType.RecordRepresentation
     val meta: RecordRepresentation
     import meta.RecordImpl
 //    def alice = person.record(
@@ -44,7 +44,7 @@ class OntologyTest extends FunSuite {
 
   trait AliceDataCheck {
     import ru.primetalk.typed.ontology.metameta.toRecordWrapper
-    import ru.primetalk.typed.ontology.metameta.RecordRepresentation
+    import ru.primetalk.typed.ontology.metameta.OntologyType.RecordRepresentation
     val meta: RecordRepresentation
     import meta.RecordImpl
     import meta.recordSupport

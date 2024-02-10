@@ -23,9 +23,9 @@ trait TestDataStream extends BaseSpec:
   val products = Product.relation(Stream.emits(Seq(product1, product2)))
   val order1: Order.Row = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
   val orders = Order.relation(Stream.emit(order1))
-  val orderItem1: OrderItem.Row = (1,1,product1(0))
-  val orderItem2: OrderItem.Row = (2,1,product1(0))
-  val orderItem3: OrderItem.Row = (3,1,product2(0))
+  val orderItem1: OrderItem.Row = (1,1,Product.tableSchema.get(Product.id)(product1).get)
+  val orderItem2: OrderItem.Row = (2,1,Product.tableSchema.get(Product.id)(product1).get)
+  val orderItem3: OrderItem.Row = (3,1,Product.tableSchema.get(Product.id)(product2).get)
   val orderItems = OrderItem.relation(Stream.emits(Seq(orderItem1,orderItem2, orderItem3)))
 
 class StreamSpec extends TestDataStream:
@@ -197,8 +197,8 @@ class StreamSpec extends TestDataStream:
         // val vals = convertSortedMapToV[List, keySchema.type, aggregateSchema.type](keySchema, aggregateSchema)(reduced1)
         val concat = keySchema.concatValues(aggregateSchema)(resultSchema)
         // concat
-        val allVals: Iterable[resultSchema.Values] = reduced1.toIterable.map(concat(_, _))
-        import cats.MonoidK.ops.toAllMonoidKOps
+        val allVals: Seq[resultSchema.Values] = reduced1.toSeq.map(concat(_, _))
+        import cats.syntax.semigroupk.toSemigroupKOps
         val vals = allVals.foldLeft(MonoidK[List].empty[resultSchema.Values])((b, a) => b <+> Applicative[List].pure(a))
         Relation.apply(resultSchema)(vals)
 
@@ -232,7 +232,7 @@ class StreamSpec extends TestDataStream:
         val resultSchema = keySchema.concat(aggregateISchema)
         val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
-        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(keyF, priceAsSumPrice)
         reduced1
 
     val result = expensesReport(products, orderItems, 1)
@@ -270,7 +270,7 @@ class StreamSpec extends TestDataStream:
         val resultSchema = keySchema.concat(aggregateISchema)
         val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
-        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(keyF, priceAsSumPrice)
         reduced1
 
     val result = expensesReport(products, orderItems, 1)
@@ -304,7 +304,7 @@ class StreamSpec extends TestDataStream:
         val resultSchema = keySchema.concat(aggregateISchema)
         val keyF = keySchema.projectorFrom(joined.schema)//.projection(keySchema)
         val priceAsSumPrice = aggregateISchema.projectorFrom(joined.schema)// joined.schema.projection(aggregateSchema)
-        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(resultSchema)(keyF, priceAsSumPrice)
+        val reduced1 = joined.groupMapReduceS(keySchema, aggregateISchema)(keyF, priceAsSumPrice)
         reduced1
 
     val result = expensesReport(products, orderItems, 1)

@@ -11,7 +11,7 @@ trait TaglessPredicateDsl:
 
   trait TaglessDsl[E[_]]:
     inline def getter[T](inline name: String, inline f: Row => T): E[T]
-    inline def property[P <: RecordProperty0](inline p: P): E[RecordProperty0.PropertyValueType[p.type]]
+    inline def property[P <: RecordProperty0](p: P): E[RecordProperty0.PropertyValueType[p.type]]
     inline def value[T](inline v: T): E[T]
     inline def equals[T](inline e1: E[T], inline e2: E[T]): E[Boolean]
 
@@ -19,7 +19,7 @@ trait TaglessPredicateDsl:
   
   object taglessEval extends TaglessDsl[RowFun]://[T] =>> Row => T]:
     inline def getter[T](inline name: String, inline f: Row => T): Row => T = f
-    inline def property[P <: RecordProperty0](inline p: P): Row => RecordProperty0.PropertyValueType[p.type] =
+    inline def property[P <: RecordProperty0](p: P): Row => RecordProperty0.PropertyValueType[p.type] =
       schema.propertyGetter(p)
     inline def value[T](inline v: T): Row => T = _ => v
     inline def equals[T](inline e1: Row => T, inline e2: Row => T): Row => Boolean = 
@@ -27,7 +27,7 @@ trait TaglessPredicateDsl:
 
   object taglessShow extends TaglessDsl[[T] =>> String]:
     inline def getter[T](inline name: String, inline f: Row => T): String = name
-    inline def property[P <: RecordProperty0](inline p: P): String =
+    inline def property[P <: RecordProperty0](p: P): String =
       p.name
     inline def value[T](inline v: T): String = s"$v"
     inline def equals[T](inline e1: String, inline e2: String): String = 

@@ -2,7 +2,7 @@ package ru.primetalk.typed.ontology.example3
 
 import org.junit.Test
 import ru.primetalk.typed.ontology.simple.meta._
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import compiletime.constValue
 import compiletime.constValueTuple
 import compiletime.ops.int._

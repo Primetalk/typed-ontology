@@ -1,10 +1,12 @@
 package ru.primetalk.typed.ontology.nested.meta
 
 import scala.reflect.ClassTag
-import ru.primetalk.typed.ontology.metameta.{OntologyType, Record, Scalar, MetaSeq, RuntimeTypeInformation, RttiProvider, OntologyEnum}
+import ru.primetalk.typed.ontology.metameta.OntologyType
+import OntologyType.*
 import ru.primetalk.typed.ontology.utils.objectName
 
-import RuntimeTypeInformation.{NamedType, EntityType}
+import ru.primetalk.typed.ontology.metameta.RuntimeTypeInformation.{NamedType, EntityType}
+import ru.primetalk.typed.ontology.metameta.RttiProvider
 
 sealed trait RecordProperty0:
   // Record type. This is not OntologyType, because only records can have named attributes.

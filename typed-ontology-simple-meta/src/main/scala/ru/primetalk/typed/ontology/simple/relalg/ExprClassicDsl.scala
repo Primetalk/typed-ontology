@@ -14,7 +14,7 @@ trait ExprClassicDsl:
   case class Function1Expr[A, B](r1: RelExpr[A], name: String, op: A => B) extends RelExpr[B]
   case class Function2Expr[A, B, C](r1: RelExpr[A], r2: RelExpr[B], name: String, op: (A, B) => C) extends RelExpr[C]
 
-  inline def prop[P <: RecordProperty0](inline p: P): Getter[RecordProperty0.PropertyValueType[p.type]] =
+  inline def prop[P <: RecordProperty0](p: P): Getter[RecordProperty0.PropertyValueType[p.type]] =
     Getter(p.name, schema.propertyGetter(p))
 
   inline def const[T](inline t: T): Getter[T] = Getter(s"$t", _ => t)

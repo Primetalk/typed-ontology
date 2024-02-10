@@ -6,7 +6,7 @@
 package ru.primetalk.typed.ontology.simplemeta3
 
 import scala.language.higherKinds
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import scala.quoted.*
 import scala.quoted.Expr.ofList
 
@@ -50,7 +50,7 @@ sealed trait RecordSchema:
   type IndexOfProp[P] = 
     RecordSchema.IndexOfTypeInTuple[Properties, P]
 
-  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: PropertySet](inline p2: P2): IndexOfProp[p2.type]
+  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: PropertySet](p2: P2): IndexOfProp[p2.type]
 
   def indexOfPropR[This >: this.type <: RecordSchema](p2: RecordProperty0): Int =
     ???
@@ -61,7 +61,7 @@ sealed trait RecordSchema:
         IndexOfProp[p] *: 
           IndicesOfProps[s]
 
-  transparent inline def indicesOfProps[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline s2: S2): IndicesOfProps[s2.type] = 
+  transparent inline def indicesOfProps[This >: this.type <: RecordSchema, S2 <: RecordSchema](s2: S2): IndicesOfProps[s2.type] = 
     constValueTuple[IndicesOfProps[s2.type]]
 
   transparent inline def getByIndex[I <: Int](inline i: I)(v: Values): ValueAt[I] =
@@ -88,14 +88,14 @@ sealed trait RecordSchema:
   //   inline val indices = indicesOfProps(schema2)
   //   Converter.converter(this, schema2)(indices)
     
-  transparent inline def concat[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
+  transparent inline def concat[This >: this.type <: RecordSchema, S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[This, schema2.type] =
     inline this match
       case _: EmptySchema => 
         schema2
       case sc: SchemaCons[p, s] => 
         (sc.schema.concat(schema2).prepend(sc.p))
 
-  transparent inline def concatValues[This >: this.type <: RecordSchema, S2 <: RecordSchema](inline schema2: S2): (Values, schema2.Values) => RecordSchema.Concat[This, S2] = 
+  transparent inline def concatValues[This >: this.type <: RecordSchema, S2 <: RecordSchema](schema2: S2): (Values, schema2.Values) => RecordSchema.Concat[This, S2] = 
     ???
 
   type PropertyGetter[P] = 
@@ -106,15 +106,15 @@ sealed trait RecordSchema:
     
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
-    P](inline p: P): PropertyGetter[p.type]
+    P](p: P): PropertyGetter[p.type]
 
   // type ProjectorFrom[S1<: RecordSchema] = S1#Values => RecordProperty0.PropertyValueType[P]// (inline is: InverseIndicesOfProps[s1.type]/*IndicesOfProps[This]*/)
   // type InverseIndicesOfProps[S1 <: RecordSchema] = S1#IndicesOfProps[this.type]
   // transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: NonEmptySchema](inline s1: S1): s1.Values => Values
-  transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](inline s1: S1): FromOtherValuesGetter[s1.Values]
+  transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](s1: S1): FromOtherValuesGetter[s1.Values]
 
 object Converter:
-  transparent inline def converter[S1<: RecordSchema, S2<:RecordSchema](inline s1: S1, inline s2: S2)(indices: s1.IndicesOfProps[S2]): s1.Values => s2.Values =
+  transparent inline def converter[S1<: RecordSchema, S2<:RecordSchema](s1: S1, s2: S2)(indices: s1.IndicesOfProps[S2]): s1.Values => s2.Values =
     (v: s1.Values) => 
       val valueAt: [I] => (i:I) => s1.ValueAt[I] =
         [I] => (i: I) => s1.getByIndexRuntime(i.asInstanceOf[Int])(v).asInstanceOf[s1.ValueAt[I]]
@@ -143,7 +143,7 @@ case object EmptySchema extends RecordSchema:
 
   def unapply(e: EmptySchema): true = true
 
-  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: PropertySet](inline p2: P2): IndexOfProp[p2.type] =
+  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2 <: PropertySet](p2: P2): IndexOfProp[p2.type] =
     RecordSchema.indexOfProp(this, p2)
   // transparent inline def projection[S2 <: RecordSchema](inline schema2: S2): Values => schema2.Values =
   //   inline schema2 match
@@ -152,12 +152,12 @@ case object EmptySchema extends RecordSchema:
 
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
-    P](inline p: P): PropertyGetter[p.type] = 
+    P](p: P): PropertyGetter[p.type] = 
       sys.error(s"There is no property getter for $p in empty schema")
 
   // transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: NonEmptySchema](inline s1: S1)(inline pg: s1.PropertyGetter[p.type]): s1.Values => Values =
   // transparent inline def projectorFrom[S1<: RecordSchema](inline s1: S1)(using ev: PropertySet <:< s1.PropertySet): s1.Values => Values =
-  transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](inline s1: S1): FromOtherValuesGetter[s1.Values] =
+  transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](s1: S1): FromOtherValuesGetter[s1.Values] =
     _ => EmptyTuple
     
 sealed trait NonEmptySchema extends RecordSchema:
@@ -170,22 +170,29 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   import RecordSchema._
   def indexOfThisProp(p: P): 0 = 0
   type R = p.R | schema.R
+
+  type PValue = RecordProperty0.PropertyValueType[p.type]
+
   type ParentSchemaOrNothing = schema.type
   type Properties = p.type *: schema.Properties
   val properties: Properties = p *: schema.properties
   def parentSchemaOrNothing: ParentSchemaOrNothing = schema
   def get[P2 <: RecordProperty0](p2: P2)(v: Values): Option[p2.P] = 
-    if p2 == p then
-      Some(v.head.asInstanceOf[p2.P])
-    else
-      schema.get(p2)(v.tail)
+    v match
+      case head *: (tail: schema.Values) =>
+        if p2 == p then
+          Some(head.asInstanceOf[p2.P])
+        else
+          schema.get(p2)(tail)
   def convertToMap(v: Values, m: Map[String, Any] = Map()): Map[String, Any] =
-    schema.convertToMap(v.tail, m.updated(p.name, v.head))
+    v match
+      case head *: (tail: schema.Values) =>
+        schema.convertToMap(tail, m.updated(p.name, head))
   def isEmpty: Boolean = false
 
   def unapply[This >: this.type <: SchemaCons[P, S]]: Unapply[This] =
     Some((p, schema))
-  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2](inline p2: P2): IndexOfProp[p2.type] =
+  transparent inline def indexOfProp[This >: this.type <: RecordSchema, P2](p2: P2): IndexOfProp[p2.type] =
     RecordSchema.indexOfProp(this, p2)
 
   // //   // 0.asInstanceOf[IndexOfProp[This, p2.type, 0]]//constValue[IndexOfProp[This, p2.type, 0]]
@@ -199,12 +206,12 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   // TODO: Try to combine a few property getters
   transparent inline def propertyGetter[
     This >: this.type <: RecordSchema, 
-    P](inline p: P): PropertyGetter[p.type] =
+    P](p: P): PropertyGetter[p.type] =
     val i = indexOfProp(p)
     _.apply(i).asInstanceOf[RecordProperty0.PropertyValueType[p.type]]////Tuple.Elem[Values, IndexOfProp[p.type]]]
     
 
-  transparent inline def projection[S2 <: RecordSchema](inline schema2: S2)(using ev: schema2.PropertySet <:< PropertySet): Values => schema2.Values =
+  transparent inline def projection[S2 <: RecordSchema](schema2: S2)(using ev: schema2.PropertySet <:< PropertySet): Values => schema2.Values =
     // schema2.projectorFrom(this)
     // val getters = schema2.properties.map[PropertyGetter]([t] => (p: t) => propertyGetter(p))
     ???
@@ -244,16 +251,19 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 //   // println(tpeS1Values.show)
 //   // ???
 //   projectorFromImpl0(self, s1)(???)
-  transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](inline s1: S1): FromOtherValuesGetter[s1.Values] =
+  transparent inline def projectorFrom[This >: this.type <: RecordSchema, S1 <: RecordSchema](s1: S1): FromOtherValuesGetter[s1.Values] =
     // val p2 = p.asInstanceOf[s1.PropertySet]
     val f2 = s1.propertyGetter(p)
-    val f1: s1.Values => RecordProperty0.PropertyValueType[p.type] = 
+    val f1: s1.Values => PValue = 
       s1.propertyGetter(p)
       // f2//.asInstanceOf[s1.Values => RecordProperty0.PropertyValueType[p.type]]
     val p1: schema.FromOtherValuesGetter[s1.Values] = schema.projectorFrom(s1)
-    (v: s1.Values) => 
-      f1(v) *: 
-        p1(v)
+    (v: s1.Values) => {
+      val f1v: PValue = f1(v)
+      val p1v: schema.Values = p1(v)
+      f1v *: 
+        p1v
+    }
 
 object RecordSchema:
   type IndexOfTypeInTupleAux[T<:Tuple, A, N <: Int] <: Int = T match
@@ -283,7 +293,7 @@ object RecordSchema:
         case 0    => RecordProperty0.PropertyValueType[p]
         case S[n] => ValueAt[s, n]
 
-  transparent inline def valueAt[X <: RecordSchema, I <: Int](inline schema: X, inline i: I)(v: schema.Values): ValueAt[X, I] = 
+  transparent inline def valueAt[X <: RecordSchema, I <: Int](schema: X, inline i: I)(v: schema.Values): ValueAt[X, I] = 
     scala.runtime.Tuples.apply(v.asInstanceOf[NonEmptyTuple], i).asInstanceOf[ValueAt[X, I]]
 
     // schema match
@@ -297,10 +307,10 @@ object RecordSchema:
     case SchemaCons[P, s] => P
     case SchemaCons[_, s] => PropByProp[s, P]
 
-  transparent inline def indexOfProp[S1 <: RecordSchema, P](inline schema: S1, inline property: P): schema.IndexOfProp[P] = 
+  transparent inline def indexOfProp[S1 <: RecordSchema, P](schema: S1, inline property: P): schema.IndexOfProp[P] = 
     constValue[schema.IndexOfProp[P]]
 
-  transparent inline def indicesOfProps[S1 <: RecordSchema, S2 <: RecordSchema](inline s1: S1, inline s2: S2): s1.IndicesOfProps[S2] = 
+  transparent inline def indicesOfProps[S1 <: RecordSchema, S2 <: RecordSchema](s1: S1, inline s2: S2): s1.IndicesOfProps[S2] = 
     constValueTuple[s1.IndicesOfProps[S2]]
 
   /** Type of the concatenation of two schemas. */

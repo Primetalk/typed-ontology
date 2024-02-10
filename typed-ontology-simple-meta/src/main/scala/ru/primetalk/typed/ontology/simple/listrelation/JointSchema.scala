@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.simple.listrelation
 
-import ru.primetalk.typed.ontology.metameta.Record
+import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
 import ru.primetalk.typed.ontology.simple.meta.ForeignKeyId0
 
@@ -23,5 +23,5 @@ object JointSchema:
     S1 <: RecordSchema,
     S2 <: RecordSchema
   ](inline schema1: S1, inline schema2: S2) =
-    val joinSchema = schema1.concat(schema2)
+    val joinSchema = schema1.concat[S2](schema2)
     JointSchema(schema1, schema2)(joinSchema)
