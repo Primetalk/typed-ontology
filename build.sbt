@@ -1,5 +1,7 @@
-val scala3Version = "3.1.2"
+val scala3Version = "3.4.0-RC4"
 val mainVersion = "0.2.5"
+
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / organization := "ru.primetalk"
 ThisBuild / version      := mainVersion
@@ -21,21 +23,24 @@ ThisBuild / versionScheme := Some("early-semver")
 //   //  "-Xmax-inlines=64"
 // )
 
-val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.4"
-val catsCore   = "org.typelevel" %% "cats-core"   % "2.7.0"
+val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.0"
+val catsCore   = "org.typelevel" %% "cats-core"   % "2.9.0"
 val fs2 = libraryDependencies ++= Seq(
-  "co.fs2" %% "fs2-core" % "3.2.4",
-  "co.fs2" %% "fs2-io"   % "3.2.4",
+  "co.fs2" %% "fs2-core" % "3.7.0",
+  "co.fs2" %% "fs2-io"   % "3.7.0",
 )
 
 val commonSettings = Seq(
   scalaVersion := scala3Version,
-  // scalacOptions += "-Xmax-inlines=50",
+  scalacOptions ++= Seq(
+    //"-Xmax-inlines=50",
+    "-deprecation",
+  ),
   libraryDependencies ++= Seq(
     catsCore,
     "com.novocode" % "junit-interface" % "0.11" % Test,
-    "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
-    "org.scalatest"  %% "scalatest"  % "3.2.11" % Test,
+    "org.scalacheck" %% "scalacheck" % "1.17.0" % Test,
+    "org.scalatest"  %% "scalatest"  % "3.2.15" % Test,
   )
 )
 
@@ -50,6 +55,12 @@ lazy val root = (project in file("."))
     name := "typed-ontology",
     publish / skip := true,
   )
+//lazy val typeSet = project
+//  .in(file("type-set"))
+//  .settings(
+//    name := "type-set",
+//  )
+//  .settings(commonSettings *)
 
 lazy val typedOntologyMetaMeta = project
   .in(file("typed-ontology-metameta"))
@@ -57,7 +68,7 @@ lazy val typedOntologyMetaMeta = project
     name := "typed-ontology-metameta",
     fs2,
   )
-  .settings(commonSettings :_*)
+  .settings(commonSettings *)
 
 lazy val typedOntologyMeta = project
   .in(file("typed-ontology-meta"))
@@ -73,7 +84,7 @@ lazy val typedOntologySimpleMeta = project
     name := "typed-ontology-simple-meta",
   )
   .dependsOn(typedOntologyMetaMeta)
-  .settings(commonSettings :_*)
+  .settings(commonSettings *)
 
 lazy val ontologyExample1 = project
   .in(file("ontology-example1"))
@@ -82,6 +93,7 @@ lazy val ontologyExample1 = project
     publish / skip := true,
   )
   .dependsOn(
-    typedOntologySimpleMeta
+    typedOntologySimpleMeta,
+    typedOntologyMetaMeta,
   )
-  .settings(commonSettings :_*)
+  .settings(commonSettings *)
