@@ -44,8 +44,10 @@ abstract class AttributeId[A, B <: OntologyType](name1: String, val tpe: RttiPro
 
 object RecordProperty0:
   type PropertyValueType[A] = A match
-    case AttributeId[_, Record[p]] => Record[p]
-    case AttributeId[_, Scalar[p]] => p
+    case AttributeId[_, at] =>
+      at match
+        case Record[p] => Record[p]
+        case Scalar[p] => p
     case _                         => Nothing
 
 trait PropertiesBuilder extends RecordSchemaBuilderBase:
@@ -74,17 +76,17 @@ trait PropertiesBuilder extends RecordSchemaBuilderBase:
   abstract class seqOfEnum[T](using RttiProvider[MetaSeq[OntologyEnum[T]]])
       extends seq[OntologyEnum[T]]
 
-  def namedEntityType(name: String, columns: AttributeId[RecordType, _]*): NamedType =
+  def namedEntityType(name: String, columns: AttributeId[RecordType, ?]*): NamedType =
     NamedType(name, EntityType(columns.map(a => (a.name, a.tpe.rtti)).toMap))
 
-  def namedEntityType(columns: AttributeId[RecordType, _]*): NamedType =
+  def namedEntityType(columns: AttributeId[RecordType, ?]*): NamedType =
     namedEntityType(objectName(this), columns*)
 
   def defineEntityType(
       name: String,
-      columns: AttributeId[RecordType, _]*
+      columns: AttributeId[RecordType, ?]*
   ): RttiProvider[Record[RecordType]] =
     RttiProvider.provide[Record[RecordType]](namedEntityType(name, columns*))
 
-  def defineEntityType(columns: AttributeId[RecordType, _]*): RttiProvider[Record[RecordType]] =
+  def defineEntityType(columns: AttributeId[RecordType, ?]*): RttiProvider[Record[RecordType]] =
     defineEntityType(objectName(this), columns*)
