@@ -21,6 +21,8 @@ object Order extends TableBuilder:
   object date extends column[LocalDateTime]
   type TableSchema = id.type #: date.type #: EmptySchema
   val tableSchema: TableSchema = fields(id, date)
+  val ts = fields(id, date)
+  type TS = ts.Type
 
 object OrderItem extends TableBuilder:
   object id        extends column[Int]

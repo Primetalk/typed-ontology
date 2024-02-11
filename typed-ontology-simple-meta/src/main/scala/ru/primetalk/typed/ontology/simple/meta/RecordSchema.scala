@@ -26,6 +26,8 @@ sealed trait RecordSchema:
   self =>
   import RecordSchema._
 
+  type Type = self.type
+  
   type Properties <: Tuple
   val properties: Properties
 
