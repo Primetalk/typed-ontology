@@ -14,6 +14,8 @@ object Product extends TableBuilder:
   val idNameSchema             = fields(id, name)
   val primaryKeySchema         = fields(id)
 
+  val fullSchema = infer[TableSchema]
+
 object Order extends TableBuilder:
   object id   extends column[Int]
   object date extends column[LocalDateTime]

@@ -456,12 +456,6 @@ object RecordSchema:
   //   case SchemaCons[`P`, s] => `P` *: s#Values => RecordProperty0.PropertyValueType[P]
   //   case SchemaCons[_, s]     => PropertyGetter[s, P]
 
-  // IsPropertyInSchema[P, Schema] match
-  //   case true =>
-  //     Schema#Values => RecordProperty0.PropertyValueType[P]
-  //   case false =>
-  //     Schema#Values => Nothing
-
   // // DOESN'T WORK
   // transparent inline def removeDoesntWork
   //   [P1 <: RecordProperty0, S <: RecordSchema]
@@ -471,6 +465,22 @@ object RecordSchema:
   //     case SchemaCons(`p1`, s): SchemaCons[P1, st] => s
   //     case SchemaCons(p,    s): SchemaCons[pt, st] => SchemaCons(p, removeDoesntWork(p1, s))
 
+  type Reverse0[S <: RecordSchema, Accum <: RecordSchema] <: RecordSchema = S match
+    case EmptySchema => Accum
+    case SchemaCons[p, s] => 
+      Reverse0[s, SchemaCons[p, Accum]]
+
+  type Reverse[S <: RecordSchema] = Reverse0[S, EmptySchema]
+
+  transparent inline def reverse0[S <: RecordSchema, Accum <: RecordSchema](s: S, accum: Accum): Reverse0[S, Accum] = 
+    s match
+      case _ : EmptySchema => accum
+      case sc : SchemaCons[p, s] =>
+        reverse0[s, SchemaCons[p,Accum]](sc.schema, SchemaCons(sc.p, accum))
+
+  transparent inline def reverse[S <: RecordSchema](s: S): Reverse[S] = 
+    reverse0(s, EmptySchema)
+  
 def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] =
   Expr(a.show)
 

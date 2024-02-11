@@ -48,7 +48,7 @@ object RecordProperty0:
       at match
         case Record[p] => Record[p]
         case Scalar[p] => p
-    case _                         => Nothing
+    case _ => Nothing
 
 trait PropertiesBuilder extends RecordSchemaBuilderBase:
 

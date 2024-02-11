@@ -27,13 +27,14 @@ trait SchemaBuilder extends RecordSchemaBuilderBase:
 def fieldsReverseImpl[S <: RecordSchema](
     propertyList: Expr[Seq[RecordProperty0]],
     schemaExpr: Expr[S]
-)(using Type[S])(using Quotes): Expr[RecordSchema] =
+)(using st: Type[S])(using Quotes): Expr[RecordSchema] =
   propertyList match
-    case Varargs(Seq()) =>
-      schemaExpr
-    case Varargs(Seq('{ $a: ta }, as*)) =>
-      val expr = fieldsReverseImpl(Varargs(as), '{ RecordSchema.prepend(${ a }, ${ schemaExpr }) })
-      expr
+    case Varargs(seq) =>
+      seq match
+        case Seq() =>
+          schemaExpr
+        case Seq('{ $a: at }, as*) => // здесь важно сохранить тип, чтобы
+          fieldsReverseImpl(Varargs(as), '{ RecordSchema.prepend(${ a }, ${ schemaExpr }) })
 
 def fieldsImpl[S <: RecordSchema](
     propertyList: Expr[Seq[RecordProperty0]],

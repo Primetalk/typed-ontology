@@ -1,6 +1,5 @@
 package ru.primetalk.typed.ontology.simple.relalg
 
-// import cats.Map
 import cats.Functor
 import cats.FlatMap
 import cats.Foldable
