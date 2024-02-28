@@ -19,19 +19,53 @@ import scala.annotation.targetName
 import scala.runtime.Tuples
 import scala.NonEmptyTuple
 
+sealed trait SchemaLike:
+  /** Имя типа или сам тип, если имя отсутствует. */
+  def tpeRepr: String
+
+  override def toString(): String =
+    tpeRepr
+
+sealed trait ScalarSchema extends SchemaLike
+
+sealed trait ScalarSchema1[T] extends ScalarSchema
+
+object ScalarSchema:
+  val BooleanScalarSchema = summon[ScalarSchema1[Boolean]]
+  val IntScalarSchema     = summon[ScalarSchema1[Int]]
+  val StringScalarSchema  = summon[ScalarSchema1[String]]
+
+object ScalarSchema1:
+  given [T: ClassTag]: ScalarSchema1[T] =
+    new ScalarSchema1[T]:
+      def tpeRepr: String = summon[ClassTag[T]].runtimeClass.getSimpleName
+
+sealed trait TupleSchema extends SchemaLike:
+  type Schemas <: Tuple
+  val schemas: Schemas
+  def tpeRepr: String = schemas.toString()
+
+case object EmptyTupleSchema extends TupleSchema:
+  type Schemas = EmptyTuple
+  val schemas: Schemas = EmptyTuple
+final case class NonEmptyTupleSchema[HS <: SchemaLike, TS <: TupleSchema](h: HS, t: TS)
+    extends TupleSchema:
+  type Schemas = h.type *: t.Schemas
+  val schemas: Schemas = h *: t.schemas
+
 /** Schema of properties for a record R. We can use tuples and maps to represent instances of this
   * schema.
   */
-sealed trait RecordSchema:
+sealed trait RecordSchema extends SchemaLike:
   self =>
   import RecordSchema._
 
   type Type = self.type
-  
+
   type Properties <: Tuple
   val properties: Properties
 
-  override def toString: String =
+  def tpeRepr: String =
     properties.toIArray.mkString(", ")
 
   type PropertySet = Tuple.Union[Properties] & RecordProperty0
@@ -371,6 +405,26 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 
 object RecordSchema:
+  type SimpleProperty[R0, N, S <: SchemaLike] = RecordProperty0 {
+    type R = R0
+    type P = S
+  }
+
+  type RecordSchemaFromTupleSchema[
+      R,
+      PropertySchemas <: Tuple,
+      PropertyNames <: Tuple
+  ] <: RecordSchema =
+    PropertySchemas match
+      case EmptyTuple =>
+        PropertyNames match
+          case EmptyTuple =>
+            EmptySchema
+      case h *: t =>
+        PropertyNames match
+          case hn *: tn =>
+            SimpleProperty[R, hn, h] #: RecordSchemaFromTupleSchema[R, t, tn]
+
   type IndexOfTypeInTupleAux[T <: Tuple, A, N <: Int] <: Int = T match
     case EmptyTuple => Nothing
     case A *: t     => N
@@ -469,20 +523,23 @@ object RecordSchema:
 
   type Reverse0[S <: RecordSchema, Accum <: RecordSchema] <: RecordSchema = S match
     case EmptySchema => Accum
-    case SchemaCons[p, s] => 
+    case SchemaCons[p, s] =>
       Reverse0[s, SchemaCons[p, Accum]]
 
   type Reverse[S <: RecordSchema] = Reverse0[S, EmptySchema]
 
-  transparent inline def reverse0[S <: RecordSchema, Accum <: RecordSchema](s: S, accum: Accum): Reverse0[S, Accum] = 
+  transparent inline def reverse0[S <: RecordSchema, Accum <: RecordSchema](
+      s: S,
+      accum: Accum
+  ): Reverse0[S, Accum] =
     s match
-      case _ : EmptySchema => accum
-      case sc : SchemaCons[p, s] =>
-        reverse0[s, SchemaCons[p,Accum]](sc.schema, SchemaCons(sc.p, accum))
+      case _: EmptySchema => accum
+      case sc: SchemaCons[p, s] =>
+        reverse0[s, SchemaCons[p, Accum]](sc.schema, SchemaCons(sc.p, accum))
 
-  transparent inline def reverse[S <: RecordSchema](s: S): Reverse[S] = 
+  transparent inline def reverse[S <: RecordSchema](s: S): Reverse[S] =
     reverse0(s, EmptySchema)
-  
+
 def showExprImpl(a: Expr[Any])(using Quotes): Expr[String] =
   Expr(a.show)
 
