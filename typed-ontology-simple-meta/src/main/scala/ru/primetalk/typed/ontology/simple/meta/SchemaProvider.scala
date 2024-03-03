@@ -25,16 +25,16 @@ object SchemaProvider {
     val schema: Schema = EmptyTupleSchema
   }
   given SchemaProvider[Boolean] = new {
-    type Schema = ScalarSchema.BooleanScalarSchema.type
-    val schema = ScalarSchema.BooleanScalarSchema
+    type Schema = ScalarSchema1.BooleanScalarSchema.type
+    val schema = ScalarSchema1.BooleanScalarSchema
   }
   given SchemaProvider[Int] = new {
-    type Schema = ScalarSchema.IntScalarSchema.type
-    val schema = ScalarSchema.IntScalarSchema
+    type Schema = ScalarSchema1.IntScalarSchema.type
+    val schema = ScalarSchema1.IntScalarSchema
   }
   given SchemaProvider[String] = new {
-    type Schema = ScalarSchema.StringScalarSchema.type
-    val schema = ScalarSchema.StringScalarSchema
+    type Schema = ScalarSchema1.StringScalarSchema.type
+    val schema = ScalarSchema1.StringScalarSchema
   }
 
   given [H: SchemaProvider, T <: Tuple: TupleSchemaProvider]: TupleSchemaProvider[H *: T] =

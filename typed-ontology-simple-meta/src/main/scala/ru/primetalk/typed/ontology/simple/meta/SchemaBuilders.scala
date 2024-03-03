@@ -114,4 +114,3 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
   type TableSchema <: RecordSchema
   transparent inline def infer[S <: RecordSchema]: S = RecordSchema.constSchema[S]
   val tableSchema: TableSchema
-  type Row = tableSchema.Values
