@@ -163,7 +163,12 @@ trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
     new:
       val aSvt = summon[RecordSchemaValueType[EmptySchema]]
       val bSvt = summon[RecordSchemaValueType[B]]
-      val abSvt = bSvt
+
+      type Schema = B
+      
+      def schemaConcat(a: EmptySchema, b: B): Schema = b
+      val abSvt: RecordSchemaValueType[Schema] = bSvt
+
       def apply(a: aSvt.Value, b: bSvt.Value): abSvt.Value = 
         b.asInstanceOf[abSvt.Value]
 
@@ -173,4 +178,5 @@ with  TupleSimpleTypes
 with ScalarSimpleTypes
 with RecordSchemaSimpleTypes
 with ProjectorSimpleTypes 
+with ConcatenatorSimpleTypes
 //with TableBuilderSimpleTypes

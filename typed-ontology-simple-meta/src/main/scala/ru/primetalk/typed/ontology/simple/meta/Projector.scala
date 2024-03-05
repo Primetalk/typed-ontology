@@ -8,5 +8,7 @@ trait Projector[From <: SchemaLike, To <: SchemaLike]:
 trait Concatenator[A <: RecordSchema, B <: RecordSchema]:
   val aSvt: RecordSchemaValueType[A]
   val bSvt: RecordSchemaValueType[B]
-  val abSvt: RecordSchemaValueType[RecordSchema.Concat[A, B]]
+  type Schema = RecordSchema.Concat[A, B]
+  def schemaConcat(a: A, b: B): Schema // r1.schema.appendOtherSchema(schema)
+  val abSvt: RecordSchemaValueType[Schema]
   def apply(a: aSvt.Value, b: bSvt.Value): abSvt.Value
