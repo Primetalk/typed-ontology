@@ -127,11 +127,11 @@ sealed trait RecordSchema extends SchemaLike:
   /** Type of the concatenation of two schemas. */
   type AppendOtherSchema[S2 <: RecordSchema] <: RecordSchema
 
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](inline s2: S2): AppendOtherSchema[S2]
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](s2: S2): RecordSchema.Concat[Type, S2]
 
   @targetName("SchemaCons")
-  inline def #:[P <: RecordProperty0, This >: this.type <: RecordSchema](p: P): p.type #: This =
-    SchemaCons[p.type, This](p, this)
+  inline def #:[P <: RecordProperty0](p: P): P #: Type =
+    SchemaCons[P, Type](p, this)
 
 
   transparent inline def ##:[Other <: RecordSchema, This >: this.type <: RecordSchema](inline other: Other) = 
@@ -156,7 +156,6 @@ sealed trait RecordSchema extends SchemaLike:
 type EmptySchema = EmptySchema.type
 
 case object EmptySchema extends RecordSchema:
-
   import RecordSchema._
   type R = Nothing
 
@@ -171,9 +170,7 @@ case object EmptySchema extends RecordSchema:
   inline def concat[S2 <: RecordSchema](inline schema2: S2): S2 =
     schema2
 
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](
-      inline s2: S2
-  ): AppendOtherSchema[S2] =
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](s2: S2): RecordSchema.Concat[Type,S2] =
     s2
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
@@ -206,12 +203,12 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
         Some((p, schema))
 
   type AppendOtherSchema[S2 <: RecordSchema] = SchemaCons[p.type, schema.AppendOtherSchema[S2]]
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](
-      inline s2: S2
-  ): AppendOtherSchema[S2] =
-    p #: schema.appendOtherSchema(s2)
 
-  inline def concat[S2 <: RecordSchema](schema2: S2): AppendOtherSchema[schema2.type] =
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](s2: S2): RecordSchema.Concat[Type,S2] =
+    val res = (p #: schema.appendOtherSchema(s2))
+    res.asInstanceOf[RecordSchema.Concat[Type,S2]]
+
+  inline def concat[S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[Type,S2] =
     appendOtherSchema(schema2)
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
