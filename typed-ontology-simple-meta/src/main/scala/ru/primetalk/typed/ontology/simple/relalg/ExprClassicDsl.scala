@@ -4,11 +4,12 @@ import ru.primetalk.typed.ontology.simple.meta.Projector
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
 import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
 
 trait ExprClassicDsl:
   type Schema <: RecordSchema
   val schema: Schema
-  val svt: SchemaValueType.Aux1[schema.type]
+  val svt: RecordSchemaValueType[Schema]
   type Row = svt.Value
   // DSL. It is part of a single relation to have intrinsic access to schema
 

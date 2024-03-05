@@ -19,6 +19,7 @@ import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
 import ru.primetalk.typed.ontology.simple.meta.TableBuilder
 import fs2._
+import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
 
 /** RelationF is a pair of schema and a stream of instances of that schema. F - is the effect type.
   */
@@ -28,7 +29,7 @@ abstract class RelationF[+F[_]] extends ExprClassicDsl:
   type Schema <: RecordSchema
   val schema: Schema
 
-  val svt: SchemaValueType.Aux1[schema.type]// = summon[SchemaValueType[schema.type]]
+  val svt: RecordSchemaValueType[Schema]// = summon[SchemaValueType[schema.type]]
   
   type Row = svt.Value
 

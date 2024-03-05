@@ -17,16 +17,20 @@ import ru.primetalk.typed.ontology.simple.meta.RecordProperty
 import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
 import ru.primetalk.typed.ontology.simple.meta.TableBuilder
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
+import cats.syntax.flatMap.given
+import cats.syntax.functor.given
+import cats.syntax.foldable.given
 
 /** Relation is a pair of schema and a collection of instances of that schema. V - is the collection
   * type (List, Stream[...]).
   */
-abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using SchemaValueType.Aux1[schema.type]) extends ExprClassicDsl:
+abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using RecordSchemaValueType[S]) extends ExprClassicDsl:
   self =>
 
   type Schema = S
 
-  val svt: SchemaValueType.Aux1[schema.type] = summon[SchemaValueType.Aux1[schema.type]]
+  val svt: RecordSchemaValueType[S] = summon[RecordSchemaValueType[S]]
   
   type Row = svt.Value
   val rows: V[Row]
@@ -35,7 +39,6 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using SchemaValu
     type Row    = self.Row
   }
   def show(using Foldable[V]) =
-    import cats.syntax.foldable.given
 
     schema.toString +
       "\n-----\n" +
@@ -44,26 +47,34 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using SchemaValu
         .reverse
         .mkString("\n")
 
-  transparent inline def projection[S2 <: RecordSchema](s2: S2)(using proj: Projector[schema.type, s2.type])(using Functor[V]) =
-    import cats.syntax.functor.given
-    val vals = rows.map(v => proj(v.asInstanceOf[proj.from.Value]))
-    Relation[s2.type, V](s2)(using proj.to)(vals)
+  transparent inline def projection[S2 <: RecordSchema](s2: S2)(
+    using
+      proj: Projector[schema.type, s2.type],
+      f: Functor[V],
+      ev: proj.to.type =:= RecordSchemaValueType[s2.type]
+    ) =
+    val rsvt: RecordSchemaValueType[s2.type] = ev(proj.to)
+    val vals = rows.map(v => proj(v.asInstanceOf[proj.from.Value]).asInstanceOf[rsvt.Value])
+    Relation[s2.type, V](s2)(using rsvt)(vals)
 
-  // transparent inline def crossProductFrom[S1 <: RecordSchema, R1 <: Relation[S1, V]](r1: R1)(using
-  //     fm: FlatMap[V],
-  //     concat: Concatenator[r1.Schema, this.Schema]
-  // ): Relation[this.Schema ##: r1.Schema, V] =
-  //   import cats.syntax.flatMap.given
-  //   import cats.syntax.functor.given
-  //   val schema3 = r1.schema.appendOtherSchema(schema)
-  //   // val concatValues: (r1.schema.Values, schema.Values) => schema3.Values =
-  //   //   r1.schema.appendValues(schema)(schema3)
-  //   val vals =
-  //     for
-  //       row1 <- r1.rows
-  //       row2 <- this.rows
-  //     yield concat(row1, row2)
-  //   Relation(schema3)(vals)
+  /**<:<
+    * Строим декартово произведение отношения r1 и текущего отношения.
+    */
+  transparent inline def crossProductFrom[S1 <: RecordSchema, R1 <: Relation[S1, V]](r1: R1)(using
+      fm: FlatMap[V],
+      concat: Concatenator[r1.schema.type, this.schema.type]
+  )(using 
+    ev1: r1.Row =:= concat.aSvt.Value,
+    ev2: Row =:= concat.bSvt.Value
+  ): Relation[concat.Schema, V] =
+    type S = concat.Schema
+    val schema3: S = concat.schemaConcat(r1.schema, schema)
+    val vals =
+      for
+        row1 <- r1.rows
+        row2 <- this.rows
+      yield concat(row1, row2)
+    Relation[S, V](schema3: S)(using concat.abSvt)(vals)
 
   // transparent inline def crossProduct[R2 <: Relation[V]](r2: R2)(using FlatMap[V]) =
   //   import cats.syntax.flatMap.given
@@ -280,9 +291,9 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using SchemaValu
 //   vals
 
 object Relation:
-  transparent inline def apply[S1 <: RecordSchema, V[_]](s1: S1)(using svt1: SchemaValueType.Aux1[s1.type])(inline v: V[svt1.Value]) =
-    new Relation[s1.type, V](s1)(using svt1) {
-      type Schema = s1.type
+  transparent inline def apply[S1 <: RecordSchema, V[_]](s1: S1)(using svt1: RecordSchemaValueType[S1])(inline v: V[svt1.Value]) =
+    new Relation[S1, V](s1)(using svt1) {
+      type Schema = S1
       val rows   = v.asInstanceOf[V[Row]]
     }
 
