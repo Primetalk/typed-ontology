@@ -15,20 +15,16 @@ trait ScalarSimpleTypes:
   transparent inline given scalarSchema1svt[
     T <: ScalarTypes, 
     S <: ScalarSchema1[T]
-    ]: SchemaValueType.Aux1[S] =
-    new SchemaValueType:
-      type Schema = S
-      type Value = T
+    ]: SchemaValueType[S, T] =
+    new SchemaValueType[S, T]
 
 
 trait ConversionSimpleTypes:
-  transparent inline given tupleSchemaValueType[S <: TupleSchema](using tsvt: TupleSchemaValueType[S]): SchemaValueType.Aux1[S] = new SchemaValueType:
-    type Schema = S
-    type Value = tsvt.Value
+  transparent inline given tupleSchemaValueType[S <: TupleSchema](using tsvt: TupleSchemaValueType[S]): SchemaValueType[S, tsvt.Value] = 
+    new SchemaValueType[S, tsvt.Value]
 
-  transparent inline given recordSchemaValueType[S <: RecordSchema](using rsvt: RecordSchemaValueType[S]): SchemaValueType.Aux1[S] = new SchemaValueType:
-    type Schema = S
-    type Value = rsvt.Value
+  transparent inline given recordSchemaValueType[S <: RecordSchema](using rsvt: RecordSchemaValueType[S]): SchemaValueType[S, rsvt.Value] = 
+    new SchemaValueType[S, rsvt.Value]
 
 /**
   * Provide storage types (tuples) for tuple schemas.
@@ -63,10 +59,8 @@ trait PropertySimpleTypes:
 trait RecordSchemaSimpleTypes:
   val a = 0
   // SchemaValueTypes
-  transparent inline given emptySchemaSVT: SchemaValueType.Aux1[EmptySchema.type] = 
-    new SchemaValueType:
-      type Schema = EmptySchema.type
-      type Value = EmptyTuple
+  transparent inline given emptySchemaSVT: SchemaValueType[EmptySchema.type, EmptyTuple] = 
+    new SchemaValueType[EmptySchema.type, EmptyTuple]
 
   transparent inline given emptySchemaRSVT: RecordSchemaValueType[EmptySchema.type] = 
     new:
@@ -94,19 +88,19 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
 
 
   // Projectors for properties
-  transparent inline given propertyProjector[P <: RecordProperty0, S <: RecordSchema, From <: P #: S](using
+  transparent inline given propertyProjector[P <: RecordProperty0, S <: RecordSchema, From <: P #: S, VFrom, VP](using
       vp: ValueOf[P],
-      svtp: SchemaValueType.Aux1[vp.value.Schema],
-      svtps: SchemaValueType.Aux1[From]
-  ): Projector[From, vp.value.Schema] =
-    new:
-      val from: SchemaValueType.Aux1[From] = svtps
-      val to: SchemaValueType.Aux1[vp.value.Schema]  = svtp
+      svtp: SchemaValueType[vp.value.Schema, VP],
+      svtps: SchemaValueType[From, VFrom]
+  ): Projector[From, VFrom, vp.value.Schema, VP] =
+    new Projector[From, VFrom, vp.value.Schema, VP]:
+      val from: SchemaValueType[From, VFrom] = svtps
+      val to: SchemaValueType[vp.value.Schema, VP]  = svtp
 
-      def apply[T](v: T)(using ev: T <:< from.Value): to.Value =
+      def apply(v: VFrom): VP =
         v match
           case h *: _ =>
-            h.asInstanceOf[to.Value]
+            h.asInstanceOf[VP]
           case _ => 
             ???
 
@@ -114,45 +108,53 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
     P <: RecordProperty0, 
     P2 <: RecordProperty0, 
     S <: RecordSchema, 
-    From <: P2 #: S](using
+    From <: P2 #: S, 
+    SFrom <: Tuple, 
+    VP, 
+    VP2
+    ](using
       vp: ValueOf[P],
-      proj: Projector[S, vp.value.Schema],
-      svtps: SchemaValueType.Aux1[From]
-  ): Projector[From, vp.value.Schema] =
+      proj: Projector[S, SFrom, vp.value.Schema, VP],
+      svtps: SchemaValueType[From, VP2 *: SFrom]
+  ): Projector[From, VP2 *: SFrom, vp.value.Schema, VP] =
     new:
-      val from: SchemaValueType.Aux1[From] = svtps
-      val to: SchemaValueType.Aux1[vp.value.Schema]  = proj.to
-      def apply[T](v: T)(using ev: T <:< from.Value): to.Value =
+      val from: SchemaValueType[From, VP2 *: SFrom] = svtps
+      val to: SchemaValueType[vp.value.Schema, VP]  = proj.to
+      def apply(v: VP2 *: SFrom): VP =
         v match
-          case _ *: t =>
-            proj(t.asInstanceOf[proj.from.Value]).asInstanceOf[to.Value]
+          case _ *: (t: SFrom) =>
+            proj.apply(t)
 
   // Projectors for various schemas
-  transparent inline given emptySchemaProjector[From <: SchemaLike: SchemaValueType.Aux1]: Projector[From, EmptySchema] =
+  transparent inline given emptySchemaProjector[From <: SchemaLike, VFrom](using svt:SchemaValueType[From, VFrom]): Projector[From, VFrom, EmptySchema, EmptyTuple] =
     new:
-      val from: SchemaValueType.Aux1[From]      = summon[SchemaValueType.Aux1[From]]
-      val to: SchemaValueType.Aux1[EmptySchema.type] = summon[SchemaValueType.Aux1[EmptySchema.type]](using emptySchemaSVT)
-      def apply[T](v: T)(using ev: T <:< from.Value): to.Value =
-        EmptyTuple.asInstanceOf[to.Value]
+      val from: SchemaValueType[From, VFrom]      = svt
+      val to: SchemaValueType[EmptySchema.type, EmptyTuple] = summon[SchemaValueType[EmptySchema.type, EmptyTuple]](using emptySchemaSVT)
+      def apply(v: VFrom): EmptyTuple =
+        EmptyTuple
 
-  transparent inline given propertyProjector[From <: SchemaLike, P <: RecordProperty0, S <: RecordSchema,
-  To <: P #: S](using
+  transparent inline given propertyProjector[From <: SchemaLike, 
+  P <: RecordProperty0, S <: RecordSchema,
+  To <: P #: S, 
+  VFrom,
+  VP,
+  VS <: Tuple
+  ](using
       vp: ValueOf[P],
-      projs: Projector[From, S],
-      projp: Projector[From, vp.value.Schema],
-      svtps: SchemaValueType.Aux1[To]
-  ): Projector[From, To] =
+      projs: Projector[From, VFrom, S, VS],
+      projp: Projector[From, VFrom, vp.value.Schema, VP],
+      svtps: SchemaValueType[To, VP *: VS]
+  ): Projector[From, VFrom, To, VP *: VS] =
     new:
-      val from: SchemaValueType.Aux1[From]  = projs.from
-      val to: SchemaValueType.Aux1[To] = svtps
-      def apply[T](v: T)(using ev: T <:< from.Value): to.Value =
-        val t = projs(v.asInstanceOf[projs.from.Value]).asInstanceOf[Tuple]
-        (projp(v.asInstanceOf[projp.from.Value]) *: t).asInstanceOf[to.Value]
+      val from: SchemaValueType[From, VFrom]  = projs.from
+      val to: SchemaValueType[To, VP *: VS] = svtps
+      def apply(v: VFrom): VP *: VS=
+        (projp(v) *: projs(v))
 
-  extension [V, S <: SchemaLike](v: V)(using svtv: SchemaValueType.Aux[S, V])
+  extension [S <: SchemaLike, V](v: V)(using svtv: SchemaValueType[S, V])
     @targetName("get")
-    def /[P <: RecordProperty0](p: P)(using prj: Projector[S, p.Schema]): prj.to.Value = 
-      prj(v.asInstanceOf[prj.from.Value])
+    def /[P <: RecordProperty0, VP](p: P)(using prj: Projector[S, V, p.Schema, VP]): VP = 
+      prj(v)
 
 trait TableBuilderSimpleTypes:
   final case class TableBuilderExtensionR[S <: RecordSchema](schema: S, svt: RecordSchemaValueType[S]):
@@ -162,38 +164,44 @@ trait TableBuilderSimpleTypes:
 
 trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
 
-  transparent inline given emptyBConcatenator[B <: RecordSchema: RecordSchemaValueType]: Concatenator[EmptySchema, B] = 
+  transparent inline given emptyBConcatenator[B <: RecordSchema, VB](using SchemaValueType[B, VB]): Concatenator[EmptySchema, EmptyTuple, B, VB, VB] = 
     new:
-      val aSvt = summon[RecordSchemaValueType[EmptySchema]]
-      val bSvt = summon[RecordSchemaValueType[B]]
+      val aSvt = summon[SchemaValueType[EmptySchema, EmptyTuple]]
+      val bSvt = summon[SchemaValueType[B, VB]]
 
       type Schema = B
       
       def schemaConcat(a: EmptySchema, b: B): Schema = b
-      val abSvt: RecordSchemaValueType[Schema] = bSvt
+      val abSvt: SchemaValueType[B, VB] = bSvt
 
-      def apply(a: aSvt.Value, b: bSvt.Value): abSvt.Value = 
-        b.asInstanceOf[abSvt.Value]
+      def apply(a: EmptyTuple, b: VB): VB = 
+        b
 
   transparent inline given nonEmptyConcatenator[
     P <: RecordProperty0,
-    S <: RecordSchema: RecordSchemaValueType, 
-    A <: SchemaCons[P, S]: RecordSchemaValueType, 
-    B <: RecordSchema: RecordSchemaValueType,
-    ](using concatSB: Concatenator[S, B], 
-    svt: RecordSchemaValueType[SchemaCons[P, concatSB.Schema]]): Concatenator[A, B] = 
+    S <: RecordSchema, 
+    A <: SchemaCons[P, S], 
+    B <: RecordSchema,
+    VP, VS <: Tuple, VB<: Tuple, VPSB <: Tuple
+    ](using 
+    svtS: SchemaValueType[S, VS],
+    svtA: SchemaValueType[A, VP *: VS],
+    svtB: SchemaValueType[B, VB],
+    concatSB: Concatenator[S, VS, B, VB, VPSB], 
+    svt: SchemaValueType[SchemaCons[P, concatSB.Schema], VP *: VPSB]
+    ): Concatenator[A, VP *: VS, B, VB, VP *: VPSB] = 
     new:
-      val aSvt = summon[RecordSchemaValueType[A]]
-      val bSvt = summon[RecordSchemaValueType[B]]
+      val aSvt = svtA
+      val bSvt = svtB
 
       type Schema = SchemaCons[P, concatSB.Schema]
       
       def schemaConcat(a: A, b: B): Schema = 
         a.appendOtherSchema(b)
 
-      val abSvt: RecordSchemaValueType[Schema] = svt
+      val abSvt: SchemaValueType[SchemaCons[P, concatSB.Schema], VP *: VPSB] = svt
 
-      def apply(a: aSvt.Value, b: bSvt.Value): abSvt.Value = 
+      def apply(a: VP *: VS, b: VB): VP *: VPSB = 
         Tuples.concat(a, b).asInstanceOf[abSvt.Value]
 
 object SimpleTypes extends PropertySimpleTypes

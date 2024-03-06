@@ -25,16 +25,16 @@ import cats.syntax.foldable.given
 /** Relation is a pair of schema and a collection of instances of that schema. V - is the collection
   * type (List, Stream[...]).
   */
-abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using RecordSchemaValueType[S]) extends ExprClassicDsl:
+abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using SchemaValueType[S, VS]) extends ExprClassicDsl:
   self =>
 
   type Schema = S
 
-  val svt: RecordSchemaValueType[S] = summon[RecordSchemaValueType[S]]
+  val svt: SchemaValueType[S, VS] = summon[SchemaValueType[S, VS]]
   
-  type Row = svt.Value
+  type Row = VS
   val rows: V[Row]
-  type Self = Relation[S, V] {
+  type Self = Relation[S, VS, V] {
     type Schema = self.Schema
     type Row    = self.Row
   }
@@ -47,28 +47,26 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using RecordSche
         .reverse
         .mkString("\n")
 
-  transparent inline def projection[S2 <: RecordSchema](s2: S2)(
+  transparent inline def projection[S2 <: RecordSchema, VS2 <: Tuple](s2: S2)(
     using
-      proj: Projector[Schema, S2],
+      proj: Projector[Schema, Row, S2, VS2],
       f: Functor[V],
-      evFrom: this.Row =:= proj.from.Value,
-      ev: proj.to.type =:= RecordSchemaValueType[S2],
-
+      ev: proj.to.type =:= RecordSchemaValueType[S2]
     ) =
-    val rsvt: RecordSchemaValueType[S2] = ev(proj.to)
+    val rsvt: SchemaValueType[S2, VS2] = proj.to
     val vals = rows.map(v => proj(v).asInstanceOf[rsvt.Value])
-    Relation[S2, V](s2)(using rsvt)(vals)
+    Relation[S2, VS2, V](s2)(using rsvt)(vals)
 
   /**
     * Строим декартово произведение отношения r1 и текущего отношения.
     */
-  transparent inline def crossProductFrom[S1 <: RecordSchema, R1 <: Relation[S1, V]](r1: R1)(using
+  transparent inline def crossProductFrom[S1 <: RecordSchema, VS1, R1 <: Relation[S1, VS1, V], VRes](r1: R1)(using
       fm: FlatMap[V],
-      concat: Concatenator[r1.schema.type, this.schema.type]
+      concat: Concatenator[r1.schema.type, VS1, this.schema.type, VS, VRes]
   )(using 
     ev1: r1.Row =:= concat.aSvt.Value,
     ev2: Row =:= concat.bSvt.Value
-  ): Relation[concat.Schema, V] =
+  ): Relation[concat.Schema, concat.abSvt.Value, V] =
     type S = concat.Schema
     val schema3: S = concat.schemaConcat(r1.schema, schema)
     val vals =
@@ -76,7 +74,7 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using RecordSche
         row1 <- r1.rows
         row2 <- this.rows
       yield concat(row1, row2)
-    Relation[S, V](schema3: S)(using concat.abSvt)(vals)
+    Relation[concat.Schema, concat.abSvt.Value, V](schema3: S)(using concat.abSvt)(vals)
 
   // transparent inline def crossProduct[R2 <: Relation[V]](r2: R2)(using FlatMap[V]) =
   //   import cats.syntax.flatMap.given
@@ -293,10 +291,10 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using RecordSche
 //   vals
 
 object Relation:
-  transparent inline def apply[S1 <: RecordSchema, V[_]](s1: S1)(using svt1: RecordSchemaValueType[S1])(inline v: V[svt1.Value]) =
-    new Relation[S1, V](s1)(using svt1) {
+  transparent inline def apply[S1 <: RecordSchema, VS1, V[_]](s1: S1)(using svt1: SchemaValueType[S1, VS1])(inline v: V[svt1.Value]) =
+    new Relation[S1, VS1, V](s1)(using svt1) {
       type Schema = S1
-      val rows   = v.asInstanceOf[V[Row]]
+      val rows   = v.asInstanceOf[V[VS1]]
     }
 
   // transparent inline def empty[S1 <: RecordSchema, V[_]](inline s1: S1)(using MonoidK[V]) =
@@ -310,7 +308,7 @@ object Relation:
   // }
 
 extension (tb: TableBuilder)
-  transparent inline def relation[V[_]](
-    using rsvt: RecordSchemaValueType[tb.TableSchema]
-    )(values1: V[rsvt.Value]): Relation[tb.TableSchema, V] =
+  transparent inline def relation[TSV, V[_]](
+    using rsvt: SchemaValueType[tb.TableSchema, TSV]
+    )(values1: V[rsvt.Value]): Relation[tb.TableSchema, TSV, V] =
     Relation(tb.tableSchema)(values1)

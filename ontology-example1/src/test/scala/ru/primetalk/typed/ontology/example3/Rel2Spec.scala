@@ -39,13 +39,13 @@ class Rel2Spec extends TestDataRel2:
     assertResult("id: int")(Product.id.toString)
   }
   test("projection") {
-    val p0 = summon[Projector[Product.id.type #: EmptySchema, EmptySchema]]
-    val p1 = summon[Projector[Product.id.type #: EmptySchema, Product.id.type #: EmptySchema]]
-    val pKey = summon[Projector[Product.TableSchema, Product.PrimaryKeySchema]]
+    val p0 = summon[Projector[Product.id.type #: EmptySchema, ?, EmptySchema, ?]]
+    val p1 = summon[Projector[Product.id.type #: EmptySchema, ?, Product.id.type #: EmptySchema, ?]]
+    val pKey = summon[Projector[Product.TableSchema, ?, Product.PrimaryKeySchema, ?]]
     val svt = summon[SchemaValueType.Aux1[Product.TableSchema]]
     val product1: svt.Value = (1, "name", BigInt(1))
     val product2: Product.Row = (1, "name", BigInt(1))
-    // pKey.apply(product1)
+    pKey.apply(product1)
     //val ids = products.projection(Product.primaryKeySchema)
     // ids.rows should equal(List(Tuple(1), Tuple(2)))
     // ids.schema.toString should equal(Product.primaryKeySchema.toString)

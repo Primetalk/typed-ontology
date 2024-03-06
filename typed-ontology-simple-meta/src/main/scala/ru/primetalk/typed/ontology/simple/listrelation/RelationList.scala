@@ -42,8 +42,8 @@ trait RelationList:
     val fk = fk1
   }
 
-  transparent inline def projection[S2 <: RecordSchema](s2: S2)(
-    using prj: Projector[Schema, S2],
+  transparent inline def projection[S2 <: RecordSchema, VS2](s2: S2)(
+    using prj: Projector[Schema, Row, S2, VS2],
     ev: this.Row =:= prj.from.Value,
     ev2: prj.to.type =:= SchemaValueType.Aux1[S2]
     ) =

@@ -9,8 +9,8 @@ import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
 trait ExprClassicDsl:
   type Schema <: RecordSchema
   val schema: Schema
-  val svt: RecordSchemaValueType[Schema]
-  type Row = svt.Value
+  type Row 
+  val svt: SchemaValueType[Schema, Row]
   // DSL. It is part of a single relation to have intrinsic access to schema
 
   sealed trait RelExpr[T]
@@ -19,8 +19,8 @@ trait ExprClassicDsl:
   case class Function2Expr[A, B, C](r1: RelExpr[A], r2: RelExpr[B], name: String, op: (A, B) => C)
       extends RelExpr[C]
 
-  inline def prop[P <: RecordProperty0](p: P)(using prj: Projector[schema.type, p.Schema]): Getter[prj.to.Value] =
-    Getter(p.name, r => prj(r.asInstanceOf[prj.from.Value]))
+  inline def prop[P <: RecordProperty0, VP](p: P)(using prj: Projector[schema.type, Row, p.Schema, VP]): Getter[prj.to.Value] =
+    Getter(p.name, r => prj(r))
 
   inline def const[T](inline t: T): Getter[T] = Getter(s"$t", _ => t)
 

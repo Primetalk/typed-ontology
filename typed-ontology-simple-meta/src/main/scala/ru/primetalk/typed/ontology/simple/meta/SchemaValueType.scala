@@ -3,27 +3,23 @@ package ru.primetalk.typed.ontology.simple.meta
 /** Type class that provides value type for the given schema. An instance of this class could be
   * used to retrieve type representation for the schema.
   */
-trait SchemaValueType:
-  type Schema <: SchemaLike
-  type Value
+class SchemaValueType[S <: SchemaLike, V]:
+  type Schema = S
+  type Value = V
 
 object SchemaValueType:
-  def apply[S <: SchemaLike](using SchemaValueType.Aux1[S]): SchemaValueType.Aux1[S] =
-    summon[SchemaValueType.Aux1[S]]
+  def apply[S <: SchemaLike](using svt: SchemaValueType[S, ?]): svt.type =
+    svt
 
   /**
    * Helper type to simplify SchemaValueType search.
    */
-  type Aux1[S <: SchemaLike] = SchemaValueType:
-    type Schema = S
+  type Aux1[S <: SchemaLike] = SchemaValueType[S, ?]
   
   /**
     * Constructs or deconstructs SchemaValueType using provided type parameters.
     */
-  type Aux[S <: SchemaLike, V] = SchemaValueType {
-    type Schema = S
-    type Value = V
-  }
+  type Aux[S <: SchemaLike, V] = SchemaValueType[S, V]
 
 /**
   * Similar mechanism that isolates TupleSchema.
