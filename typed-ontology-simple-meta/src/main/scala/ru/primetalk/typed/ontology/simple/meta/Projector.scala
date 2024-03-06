@@ -3,7 +3,7 @@ package ru.primetalk.typed.ontology.simple.meta
 trait Projector[From <: SchemaLike, To <: SchemaLike]:
   val from: SchemaValueType.Aux1[From]
   val to: SchemaValueType.Aux1[To]
-  def apply(v: from.Value): to.Value
+  def apply[T](v: T)(using ev: T <:< from.Value): to.Value
 
 trait Concatenator[A <: RecordSchema, B <: RecordSchema]:
   val aSvt: RecordSchemaValueType[A]

@@ -13,7 +13,8 @@ object Product extends TableBuilder:
   type TableSchema = id.type #: name.type #: price.type #: EmptySchema
   implicit val tableSchema: TableSchema = fields(id, name, price)
   val idNameSchema             = fields(id, name)
-  val primaryKeySchema         = fields(id)
+  type PrimaryKeySchema        = id.type #: EmptySchema
+  val primaryKeySchema: PrimaryKeySchema         = fields(id)
 
   val fullSchema = infer[TableSchema]
   val svt = summon[SchemaValueType.Aux1[TableSchema]]

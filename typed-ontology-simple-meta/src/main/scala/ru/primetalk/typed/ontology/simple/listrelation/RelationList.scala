@@ -13,6 +13,8 @@ import scala.compiletime.constValue
 import ru.primetalk.typed.ontology.simple.meta.ForeignKeyId0
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.Projector
+import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
 
 /** A simple version of relation that doesn't depend on cats and keep data in a List.
   */
@@ -20,7 +22,7 @@ trait RelationList:
   type Schema <: RecordSchema
 
   val schema: Schema
-  val svt: SchemaValueType.Aux1[schema.type]// = summon[SchemaValueType[schema.type]]
+  val svt: SchemaValueType.Aux1[Schema]// = summon[SchemaValueType[schema.type]]
   
   type Row = svt.Value
   type Values = Row
@@ -40,14 +42,19 @@ trait RelationList:
     val fk = fk1
   }
 
-  // transparent inline def projection[S2 <: RecordSchema](s2: S2) =
-  //   val f = s2.projectorFrom(schema)
-  //   val v = rows.map(f)
-  //   new RelationList {
-  //     type Schema = s2.type
-  //     val schema = s2
-  //     val rows   = v
-  //   }
+  transparent inline def projection[S2 <: RecordSchema](s2: S2)(
+    using prj: Projector[Schema, S2],
+    ev: this.Row =:= prj.from.Value,
+    ev2: prj.to.type =:= SchemaValueType.Aux1[S2]
+    ) =
+    val svtS2: SchemaValueType.Aux1[S2] = ev2(prj.to)
+    val v = rows.map(v => prj.apply(v))
+    new RelationList {
+      type Schema = S2
+      val schema = s2
+      val svt: SchemaValueType.Aux1[S2] = svtS2
+      val rows   = v.asInstanceOf[List[Values]]
+    }
 
 object RelationList:
   transparent inline def apply[S <: RecordSchema](s: S)(using svt: SchemaValueType.Aux1[s.type])(inline data: List[svt.Value]) =

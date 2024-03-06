@@ -49,15 +49,17 @@ abstract class Relation[S <: RecordSchema, V[_]](val schema: S)(using RecordSche
 
   transparent inline def projection[S2 <: RecordSchema](s2: S2)(
     using
-      proj: Projector[schema.type, s2.type],
+      proj: Projector[Schema, S2],
       f: Functor[V],
-      ev: proj.to.type =:= RecordSchemaValueType[s2.type]
-    ) =
-    val rsvt: RecordSchemaValueType[s2.type] = ev(proj.to)
-    val vals = rows.map(v => proj(v.asInstanceOf[proj.from.Value]).asInstanceOf[rsvt.Value])
-    Relation[s2.type, V](s2)(using rsvt)(vals)
+      evFrom: this.Row =:= proj.from.Value,
+      ev: proj.to.type =:= RecordSchemaValueType[S2],
 
-  /**<:<
+    ) =
+    val rsvt: RecordSchemaValueType[S2] = ev(proj.to)
+    val vals = rows.map(v => proj(v).asInstanceOf[rsvt.Value])
+    Relation[S2, V](s2)(using rsvt)(vals)
+
+  /**
     * Строим декартово произведение отношения r1 и текущего отношения.
     */
   transparent inline def crossProductFrom[S1 <: RecordSchema, R1 <: Relation[S1, V]](r1: R1)(using
@@ -307,6 +309,8 @@ object Relation:
   //   type Schema = S
   // }
 
-// extension (tb: TableBuilder)
-//   transparent inline def relation[V[_]](inline values1: V[tb.Row]): Relation[V] =
-//     Relation(tb.tableSchema)(values1)
+extension (tb: TableBuilder)
+  transparent inline def relation[V[_]](
+    using rsvt: RecordSchemaValueType[tb.TableSchema]
+    )(values1: V[rsvt.Value]): Relation[tb.TableSchema, V] =
+    Relation(tb.tableSchema)(values1)

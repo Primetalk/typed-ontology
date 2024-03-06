@@ -303,8 +303,8 @@ object RecordSchema:
         (summonInline[ValueOf[p]].value #: constSchema[s]).asInstanceOf[S]
 
   transparent inline infix def prepend[S <: RecordSchema, P <: RecordProperty0](
-      inline p: P,
-      inline schema: S
+      p: P,
+      schema: S
   ): SchemaCons[P, S] =
     SchemaCons[P, S](p, schema)
 

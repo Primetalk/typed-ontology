@@ -10,40 +10,50 @@ import ru.primetalk.typed.ontology.simple.relalg.Relation
 // import ru.primetalk.typed.ontology.simple.relalg.convertSortedMapToV
 import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
-// import ru.primetalk.typed.ontology.simple.relalg.relation
-
+import ru.primetalk.typed.ontology.simple.relalg.relation
+import ru.primetalk.typed.ontology.simple.meta.SimpleTypes
+import SimpleTypes.{given, *}
 import scala.collection.immutable.SortedMap
 import cats.MonoidK
 import cats.Applicative
+import ru.primetalk.typed.ontology.simple.meta.Projector
+import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
 
-// trait TestDataRel2 extends BaseSpec:
-//   val product1: Product.Row = (1, "product1", BigInt(5))
-//   val (product1id, _, _)    = product1
-//   val product2: Product.Row = (2, "product2", BigInt(20))
-//   val (product2id, _, _)    = product2
-//   val products              = Product.relation(List(product1, product2))
-//   val order1: Order.Row     = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
-//   val orders                = Order.relation(List(order1))
-//   val orderItem1: OrderItem.Row = (1, 1, product1id)
-//   val orderItem2: OrderItem.Row = (2, 1, product1id)
-//   val orderItem3: OrderItem.Row = (3, 1, product2id)
-//   val orderItems                = OrderItem.relation(List(orderItem1, orderItem2, orderItem3))
+trait TestDataRel2 extends BaseSpec:
+  val product1: Product.Row = (1, "product1", BigInt(5))
+  val (product1id, _, _)    = product1
+  val product2: Product.Row = (2, "product2", BigInt(20))
+  val (product2id, _, _)    = product2
+  val products              = Product.relation(List(product1, product2))
+  val order1: Order.Row     = (1, LocalDateTime.of(2022, java.time.Month.JANUARY, 23, 0, 0, 0, 0))
+  val orders                = Order.relation(List(order1))
+  val orderItem1: OrderItem.Row = (1, 1, product1id)
+  val orderItem2: OrderItem.Row = (2, 1, product1id)
+  val orderItem3: OrderItem.Row = (3, 1, product2id)
+  val orderItems                = OrderItem.relation(List(orderItem1, orderItem2, orderItem3))
 
-// class Rel2Spec extends TestDataRel2:
+class Rel2Spec extends TestDataRel2:
 
-//   test("Property to string") {
-//     println(Product.id.toString)
-//     assertResult("id: int")(Product.id.toString)
-//   }
-//   test("projection") {
-//     val ids = products.projection(Product.primaryKeySchema)
-//     ids.rows should equal(List(Tuple(1), Tuple(2)))
-//     ids.schema.toString should equal(Product.primaryKeySchema.toString)
-//   }
-//   test("schema concat") {
-//     val schema3 = products.schema.concat(orderItems.schema)
-//     schema3.toString should equal(products.schema.toString + ", " + orderItems.schema.toString)
-//   }
+  test("Property to string") {
+    println(Product.id.toString)
+    assertResult("id: int")(Product.id.toString)
+  }
+  test("projection") {
+    val p0 = summon[Projector[Product.id.type #: EmptySchema, EmptySchema]]
+    val p1 = summon[Projector[Product.id.type #: EmptySchema, Product.id.type #: EmptySchema]]
+    val pKey = summon[Projector[Product.TableSchema, Product.PrimaryKeySchema]]
+    val svt = summon[SchemaValueType.Aux1[Product.TableSchema]]
+    val product1: svt.Value = (1, "name", BigInt(1))
+    val product2: Product.Row = (1, "name", BigInt(1))
+    // pKey.apply(product1)
+    //val ids = products.projection(Product.primaryKeySchema)
+    // ids.rows should equal(List(Tuple(1), Tuple(2)))
+    // ids.schema.toString should equal(Product.primaryKeySchema.toString)
+  }
+  test("schema concat") {
+    val schema3 = products.schema.concat(orderItems.schema)
+    schema3.toString should equal(products.schema.toString + ", " + orderItems.schema.toString)
+  }
 //   test("cross product from") {
 //     val poi = products.crossProductFrom(orderItems)
 //     poi.rows should equal(
@@ -57,20 +67,20 @@ import cats.Applicative
 //       )
 //     )
 //   }
-//   test("ValueOf") {
-//     summon[ValueOf[Product.name.type]].value should equal(Product.name)
-//   }
-//   test("constSchema") {
-//     type S1 = Product.name.type #: Product.price.type #: EmptySchema
-//     val s2     = Product.fields(Product.name, Product.price)
-//     val s1: S1 = RecordSchema.constSchema[S1]
-//     s1 should equal(s2)
-//   }
-//   test("Remove property from schema") {
-//     val s1 = Product.tableSchema.remove(Product.price)
-//     val s2 = Product.id #: Product.name #: EmptySchema
-//     s1 should equal(s2)
-//   }
+  test("ValueOf") {
+    summon[ValueOf[Product.name.type]].value should equal(Product.name)
+  }
+  test("constSchema") {
+    type S1 = Product.name.type #: Product.price.type #: EmptySchema
+    val s2     = Product.fields(Product.name, Product.price)
+    val s1: S1 = RecordSchema.constSchema[S1]
+    s1 should equal(s2)
+  }
+  // test("Remove property from schema") {
+  //   val s1 = Product.tableSchema.remove(Product.price)
+  //   val s2 = Product.id #: Product.name #: EmptySchema
+  //   s1 should equal(s2)
+  // }
 //   test("cross product") {
 //     val poi          = orderItems.crossProduct(products)
 //     val withoutPrice = Product.tableSchema.remove(Product.price)
