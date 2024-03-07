@@ -51,7 +51,6 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
     using
       proj: Projector[Schema, Row, S2, VS2],
       f: Functor[V],
-      ev: proj.to.type =:= RecordSchemaValueType[S2]
     ) =
     val rsvt: SchemaValueType[S2, VS2] = proj.to
     val vals = rows.map(v => proj(v).asInstanceOf[rsvt.Value])

@@ -46,9 +46,9 @@ class Rel2Spec extends TestDataRel2:
     val product1: svt.Value = (1, "name", BigInt(1))
     val product2: Product.Row = (1, "name", BigInt(1))
     pKey.apply(product1)
-    //val ids = products.projection(Product.primaryKeySchema)
-    // ids.rows should equal(List(Tuple(1), Tuple(2)))
-    // ids.schema.toString should equal(Product.primaryKeySchema.toString)
+    val ids = products.projection(Product.primaryKeySchema)
+    ids.rows should equal(List(Tuple(1), Tuple(2)))
+    ids.schema.toString should equal(Product.primaryKeySchema.toString)
   }
   test("schema concat") {
     val schema3 = products.schema.concat(orderItems.schema)
