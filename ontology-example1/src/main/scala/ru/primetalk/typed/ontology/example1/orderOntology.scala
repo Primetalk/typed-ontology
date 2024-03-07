@@ -7,12 +7,17 @@ import SimpleTypes.{given, *}
 
 object Product extends TableBuilder:
   object id    extends column[Int]
+  val id1 = id
+  type Id = id1.type 
+  //type Id = id.type // Scala 3 bug
   object name  extends column[String]
+  type Name = name.type
   object price extends column[BigInt]
-
-  type TableSchema = id.type #: name.type #: price.type #: EmptySchema
+  type Price = price.type
+  type TableSchema = Id #: Name #: Price #: EmptySchema
   implicit val tableSchema: TableSchema = fields(id, name, price)
   val idNameSchema             = fields(id, name)
+  val namePriceSchema             = fields(name, price)
   type PrimaryKeySchema        = id.type #: EmptySchema
   val primaryKeySchema: PrimaryKeySchema         = fields(id)
 
@@ -21,9 +26,12 @@ object Product extends TableBuilder:
   type Row = svt.Value
 
 object Order extends TableBuilder:
-  implicit object id   extends column[Int]
-  implicit object date extends column[LocalDateTime]
-  type TableSchema = id.type #: date.type #: EmptySchema
+  object id   extends column[Int]
+  val id1 = id
+  type Id = id1.type
+  object date extends column[LocalDateTime]
+  type Date = date.type
+  type TableSchema = Id #: Date #: EmptySchema
   val tableSchema: TableSchema = fields(id, date)
   val ts = fields(id, date)
   type TS = ts.Type
@@ -31,16 +39,20 @@ object Order extends TableBuilder:
   type Row = svt.Value
 
 object OrderItem extends TableBuilder:
-  implicit object id        extends column[Int]
-  implicit object orderId   extends column[Int]
-  implicit object productId extends column[Int]
+  object id        extends column[Int]
+  val id1 = id
+  type Id = id1.type
+  object orderId   extends column[Int]
+  type OrderId = orderId.type
+  object productId extends column[Int]
+  type ProductId = productId.type
   // val productId = Product.id// does not work well with toString
 
-  type TableSchema = id.type #: orderId.type #: productId.type #: EmptySchema
+  type TableSchema = Id #: OrderId #: ProductId #: EmptySchema
   val tableSchema = infer[TableSchema]
   // val tableSchema: TableSchema = id #: orderId #: productId #: EmptySchema
 
-  type SmallerSchema = id.type #: orderId.type #: EmptySchema
+  type SmallerSchema = Id #: OrderId #: EmptySchema
   val smallerSchema: SmallerSchema = infer[SmallerSchema]
 
   lazy val orderIdFk   = orderId.foreignKey(Order.id)

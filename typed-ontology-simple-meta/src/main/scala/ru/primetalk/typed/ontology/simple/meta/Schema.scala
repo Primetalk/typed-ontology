@@ -151,7 +151,7 @@ sealed trait RecordSchema extends SchemaLike:
 
   type Remove[P1 <: RecordProperty0] <: RecordSchema
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[P1]
+  transparent inline def remove[P1 <: RecordProperty0](p1: P1): Remove[P1]
 
 type EmptySchema = EmptySchema.type
 
@@ -181,7 +181,7 @@ case object EmptySchema extends RecordSchema:
 
   type Remove[P1 <: RecordProperty0] = EmptySchema
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[P1] = EmptySchema
+  transparent inline def remove[P1 <: RecordProperty0](p1: P1): Remove[P1] = EmptySchema
 
 
 sealed trait NonEmptySchema extends RecordSchema:
@@ -191,6 +191,7 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
     extends NonEmptySchema:
   import RecordSchema._
 
+  require(p != null, "Property identifier should not be null")
   type ParentSchemaOrNothing = schema.type
   type Properties            = p.type *: schema.Properties
   val properties: Properties                       = p *: schema.properties
@@ -224,10 +225,12 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
       case P => S
       case _ => SchemaCons[P, schema.Remove[P1]]
 
-  transparent inline def remove[P1 <: RecordProperty0](inline p1: P1): Remove[P1] =
+  transparent inline def remove[P1 <: RecordProperty0](p1: P1): Remove[P1] =
     inline p1 match
       case _: P => schema
-      case _    => SchemaCons(p, schema.remove(p1))
+      case _    => 
+        println(p)
+        SchemaCons[P, schema.Remove[P1]](p, schema.remove(p1))
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
 infix type ##:[S1 <: RecordSchema, S <: RecordSchema] = RecordSchema.Concat[S1, S]

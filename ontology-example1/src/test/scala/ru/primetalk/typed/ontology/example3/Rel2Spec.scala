@@ -38,7 +38,7 @@ class Rel2Spec extends TestDataRel2:
     println(Product.id.toString)
     assertResult("id: int")(Product.id.toString)
   }
-  test("projection") {
+  test("availability of Projector"){
     val p0 = summon[Projector[Product.id.type #: EmptySchema, ?, EmptySchema, ?]]
     val p1 = summon[Projector[Product.id.type #: EmptySchema, ?, Product.id.type #: EmptySchema, ?]]
     val pKey = summon[Projector[Product.TableSchema, ?, Product.PrimaryKeySchema, ?]]
@@ -46,6 +46,8 @@ class Rel2Spec extends TestDataRel2:
     val product1: svt.Value = (1, "name", BigInt(1))
     val product2: Product.Row = (1, "name", BigInt(1))
     pKey.apply(product1)
+  }
+  test("projection") {
     val ids = products.projection(Product.primaryKeySchema)
     ids.rows should equal(List(Tuple(1), Tuple(2)))
     ids.schema.toString should equal(Product.primaryKeySchema.toString)
@@ -54,19 +56,19 @@ class Rel2Spec extends TestDataRel2:
     val schema3 = products.schema.concat(orderItems.schema)
     schema3.toString should equal(products.schema.toString + ", " + orderItems.schema.toString)
   }
-//   test("cross product from") {
-//     val poi = products.crossProductFrom(orderItems)
-//     poi.rows should equal(
-//       List(
-//         (1, 1, 1, 1, "product1", BigInt(5)),
-//         (1, 1, 1, 2, "product2", BigInt(20)),
-//         (2, 1, 1, 1, "product1", BigInt(5)),
-//         (2, 1, 1, 2, "product2", BigInt(20)),
-//         (3, 1, 2, 1, "product1", BigInt(5)),
-//         (3, 1, 2, 2, "product2", BigInt(20))
-//       )
-//     )
-//   }
+  test("cross product from") {
+    val poi = products.crossProductFrom(orderItems)
+    poi.rows should equal(
+      List(
+        (1, 1, 1, 1, "product1", BigInt(5)),
+        (1, 1, 1, 2, "product2", BigInt(20)),
+        (2, 1, 1, 1, "product1", BigInt(5)),
+        (2, 1, 1, 2, "product2", BigInt(20)),
+        (3, 1, 2, 1, "product1", BigInt(5)),
+        (3, 1, 2, 2, "product2", BigInt(20))
+      )
+    )
+  }
   test("ValueOf") {
     summon[ValueOf[Product.name.type]].value should equal(Product.name)
   }
@@ -76,11 +78,32 @@ class Rel2Spec extends TestDataRel2:
     val s1: S1 = RecordSchema.constSchema[S1]
     s1 should equal(s2)
   }
-  // test("Remove property from schema") {
-  //   val s1 = Product.tableSchema.remove(Product.price)
-  //   val s2 = Product.id #: Product.name #: EmptySchema
-  //   s1 should equal(s2)
-  // }
+  test("Check Product.id"){
+    val id = Product.id
+    id should equal(id)
+    s"$id" should equal("id: int")
+  }
+  
+  test("Check schema") {
+    val s1 = Product.tableSchema
+    val s2 = Product.id #: Product.name #: Product.price #: EmptySchema
+    s1 should equal(s2)
+  }
+  test("Remove first property from schema") {
+    val s1 = Product.tableSchema.remove(Product.id)
+    val s2 = Product.name #: Product.price #: EmptySchema
+    s1 should equal(s2)
+  }
+  test("Remove middle property from schema") {
+    val s1 = Product.tableSchema.remove(Product.name)
+    val s2 = Product.id #: Product.price #: EmptySchema
+    s1 should equal(s2)
+  }
+  test("Remove last property from schema") {
+    val s1 = Product.tableSchema.remove(Product.price)
+    val s2 = Product.id #: Product.name #: EmptySchema
+    s1 should equal(s2)
+  }
 //   test("cross product") {
 //     val poi          = orderItems.crossProduct(products)
 //     val withoutPrice = Product.tableSchema.remove(Product.price)
