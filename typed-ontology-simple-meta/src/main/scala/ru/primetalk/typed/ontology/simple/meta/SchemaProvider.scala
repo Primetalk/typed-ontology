@@ -18,7 +18,7 @@ object TupleSchemaProvider:
   def apply[T](using s: TupleSchemaProvider[T]): TupleSchemaProvider[T] = s
 
 object SchemaProvider {
-  def apply[T](using s: SchemaProvider[T]): SchemaProvider[T] = s
+  def apply[T](using s: SchemaProvider[T]): s.type = s
 
   given TupleSchemaProvider[EmptyTuple] = new {
     type Schema = EmptyTupleSchema.type
@@ -44,7 +44,7 @@ object SchemaProvider {
       type Schema = NonEmptyTupleSchema[hs.Schema, ts.Schema] // SchemaProvider.apply[H].Schema
       val schema = NonEmptyTupleSchema[hs.Schema, ts.Schema](hs.schema, ts.schema)
     }
-  def derived[T <: Product](using
+  transparent inline def derived[T <: Product](using
       m: Mirror.ProductOf[T],
       elems: TupleSchemaProvider[m.MirroredElemTypes],
       caseClassMeta: CaseClassMeta[T]
