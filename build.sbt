@@ -38,7 +38,7 @@ val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     catsCore,
-    "io.github.kitlangton" %% "quotidian"       % "0.0.10",
+    //"io.github.kitlangton" %% "quotidian"       % "0.0.9",
     "com.novocode"          % "junit-interface" % "0.11"   % Test,
     "org.scalacheck"       %% "scalacheck"      % "1.17.0" % Test,
     "org.scalatest"        %% "scalatest"       % "3.2.15" % Test
@@ -100,6 +100,27 @@ lazy val ontologyExample1 = project
   .settings(commonSettings*)
 
 val quillVersion = "4.8.1"
+
+lazy val ontologyQuillParser = project
+  .in(file("ontology-quill-parser"))
+  .settings(
+    name           := "ontology-quill-parser",
+    publish / skip := true
+  )
+  .dependsOn(
+    typedOntologySimpleMeta,
+    typedOntologyMetaMeta
+  )
+  .settings(commonSettings*)
+  .settings(
+    libraryDependencies ++= Seq(
+      // postgres driver
+      "org.postgresql" % "postgresql" % "42.7.0",
+      // Syncronous JDBC Modules
+      "io.getquill" %% "quill-jdbc" % quillVersion,
+    )
+  )
+
 lazy val ontologyQuill = project
   .in(file("ontology-quill"))
   .settings(
@@ -108,7 +129,8 @@ lazy val ontologyQuill = project
   )
   .dependsOn(
     typedOntologySimpleMeta,
-    typedOntologyMetaMeta
+    typedOntologyMetaMeta,
+    ontologyQuillParser
   )
   .settings(commonSettings*)
   .settings(
