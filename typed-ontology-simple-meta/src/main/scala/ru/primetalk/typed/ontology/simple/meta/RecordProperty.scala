@@ -32,12 +32,13 @@ abstract class SchemaBasedPropertyId[A, S <: SchemaLike](name1: String, val sche
 /** Metainformation about property. Contains unique name (within the type) and type of the value.
   * Might contain other metainformation about property, like Schema.
   */
-abstract class SimplePropertyId[A, B: ClassTag](name1: String)(using schema1: ScalarSchema1[B]) extends SchemaBasedPropertyId[A, ScalarSchema1[B]](name1, schema1: ScalarSchema1[B])
+abstract class SimplePropertyId[A, B: ClassTag](name1: String)(using schema1: ScalarSchema1[B])
+    extends SchemaBasedPropertyId[A, ScalarSchema1[B]](name1, schema1: ScalarSchema1[B])
 
 // object RecordProperty0:
-  // type PropertyValueType[A] = A match
-  //   case SimplePropertyId[_, p] => p
-  //   case _                      => Nothing
+// type PropertyValueType[A] = A match
+//   case SimplePropertyId[_, p] => p
+//   case _                      => Nothing
 
 trait PropertiesBuilder extends RecordSchemaBuilderBase:
   transparent inline def property[T: ClassTag](inline name: String) =

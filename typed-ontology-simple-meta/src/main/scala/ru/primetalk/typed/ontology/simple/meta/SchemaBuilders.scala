@@ -34,13 +34,13 @@ def fieldsReverseImpl[S <: RecordSchema](
       seq match
         case Seq() =>
           schemaExpr
-        case Seq('{ $a: at }, as*) => // здесь важно сохранить тип, чтобы
+        case Seq('{type at; $a: `at` }, as*) => // здесь важно сохранить тип, чтобы
           fieldsReverseImpl(Varargs(as), '{ RecordSchema.prepend(${ a }, ${ schemaExpr }) })
 
-def fieldsImpl[S <: RecordSchema](
+def fieldsImpl[S <: RecordSchema: Type](
     propertyList: Expr[Seq[RecordProperty0]],
     schemaExpr: Expr[S]
-)(using Type[S])(using Quotes): Expr[RecordSchema] =
+)(using Quotes): Expr[RecordSchema] =
   propertyList match
     case Varargs(as) =>
       fieldsReverseImpl(Varargs(as.reverse), schemaExpr)

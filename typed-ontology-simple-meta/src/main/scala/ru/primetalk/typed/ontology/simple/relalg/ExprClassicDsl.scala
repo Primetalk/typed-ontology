@@ -9,7 +9,7 @@ import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
 trait ExprClassicDsl:
   type Schema <: RecordSchema
   val schema: Schema
-  type Row 
+  type Row
   val svt: SchemaValueType[Schema, Row]
   // DSL. It is part of a single relation to have intrinsic access to schema
 
@@ -19,10 +19,12 @@ trait ExprClassicDsl:
   case class Function2Expr[A, B, C](r1: RelExpr[A], r2: RelExpr[B], name: String, op: (A, B) => C)
       extends RelExpr[C]
 
-  inline def prop[P <: RecordProperty0, VP](p: P)(using prj: Projector[schema.type, Row, p.Schema, VP]): Getter[prj.to.Value] =
+  inline def prop[P <: RecordProperty0, VP](p: P)(using
+      prj: Projector[schema.type, Row, p.Schema, VP]
+  ): Getter[prj.to.Value] =
     Getter(p.name, r => prj(r))
 
-  inline def const[T](inline t: T): Getter[T] = Getter(s"$t", _ => t)
+  inline def const[T](t: T): Getter[T] = Getter(s"$t", _ => t)
 
   extension [T](r: RelExpr[T])
     inline def ===(inline other: RelExpr[T]): Function2Expr[T, T, Boolean] =

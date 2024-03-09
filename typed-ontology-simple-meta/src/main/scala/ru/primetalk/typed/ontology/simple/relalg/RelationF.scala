@@ -29,8 +29,8 @@ abstract class RelationF[+F[_]] extends ExprClassicDsl:
   type Schema <: RecordSchema
   val schema: Schema
 
-  val svt: SchemaValueType[Schema, Row]// = summon[SchemaValueType[schema.type]]
-  
+  val svt: SchemaValueType[Schema, Row] // = summon[SchemaValueType[schema.type]]
+
   type Row
 
   val rows: Stream[F, Row]

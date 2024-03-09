@@ -15,7 +15,7 @@ object Product extends TableBuilder:
   object price extends column[BigInt]
   type Price = price.type
   type TableSchema = Id #: Name #: Price #: EmptySchema
-  implicit val tableSchema: TableSchema = fields(id, name, price)
+  val tableSchema: TableSchema = fields(id, name, price)
   val idNameSchema             = fields(id, name)
   val namePriceSchema             = fields(name, price)
   type PrimaryKeySchema        = id.type #: EmptySchema
@@ -49,7 +49,9 @@ object OrderItem extends TableBuilder:
   // val productId = Product.id// does not work well with toString
 
   type TableSchema = Id #: OrderId #: ProductId #: EmptySchema
-  val tableSchema = infer[TableSchema]
+ 
+  val tableSchema: TableSchema = fields(id, orderId, productId)
+  // val tableSchema = infer[TableSchema]
   // val tableSchema: TableSchema = id #: orderId #: productId #: EmptySchema
 
   type SmallerSchema = Id #: OrderId #: EmptySchema

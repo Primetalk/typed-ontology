@@ -22,9 +22,9 @@ trait RelationList:
   type Schema <: RecordSchema
 
   val schema: Schema
-  val svt: SchemaValueType.Aux1[Schema]// = summon[SchemaValueType[schema.type]]
-  
-  type Row = svt.Value
+  val svt: SchemaValueType.Aux1[Schema] // = summon[SchemaValueType[schema.type]]
+
+  type Row    = svt.Value
   type Values = Row
   val rows: List[Values]
 
@@ -42,27 +42,29 @@ trait RelationList:
     val fk = fk1
   }
 
-  transparent inline def projection[S2 <: RecordSchema, VS2](s2: S2)(
-    using prj: Projector[Schema, Row, S2, VS2],
-    ev: this.Row =:= prj.from.Value,
-    ev2: prj.to.type =:= SchemaValueType.Aux1[S2]
-    ) =
+  transparent inline def projection[S2 <: RecordSchema, VS2](s2: S2)(using
+      prj: Projector[Schema, Row, S2, VS2],
+      ev: this.Row =:= prj.from.Value,
+      ev2: prj.to.type =:= SchemaValueType.Aux1[S2]
+  ) =
     val svtS2: SchemaValueType.Aux1[S2] = ev2(prj.to)
-    val v = rows.map(v => prj.apply(v))
+    val v                               = rows.map(v => prj.apply(v))
     new RelationList {
       type Schema = S2
-      val schema = s2
+      val schema                        = s2
       val svt: SchemaValueType.Aux1[S2] = svtS2
-      val rows   = v.asInstanceOf[List[Values]]
+      val rows                          = v.asInstanceOf[List[Values]]
     }
 
 object RelationList:
-  transparent inline def apply[S <: RecordSchema](s: S)(using svt: SchemaValueType.Aux1[s.type])(inline data: List[svt.Value]) =
+  transparent inline def apply[S <: RecordSchema](
+      s: S
+  )(using svt: SchemaValueType.Aux1[s.type])(inline data: List[svt.Value]) =
     new RelationList {
       type Schema = s.type
-      val schema = s
+      val schema                            = s
       val svt: SchemaValueType.Aux1[s.type] = summon[SchemaValueType.Aux1[s.type]]
-      val rows   = data.asInstanceOf[List[Row]]
+      val rows                              = data.asInstanceOf[List[Row]]
     }
 
 import RecordSchema.Concat

@@ -27,8 +27,8 @@ sealed trait SchemaLike:
     tpeRepr
 
 sealed trait ScalarSchema extends SchemaLike
-/**
-  * Schema for simple Scala types.
+
+/** Schema for simple Scala types.
   */
 sealed trait ScalarSchema1[T] extends ScalarSchema
 
@@ -92,7 +92,6 @@ sealed trait RecordSchema extends SchemaLike:
   transparent inline def indicesOfProps[S2 <: RecordSchema](s2: S2): IndicesOfProps[s2.type] =
     constValueTuple[IndicesOfProps[s2.type]]
 
-
   // type Concat1[Y <: RecordSchema] <: RecordSchema =
   //   this.type match
   //     case EmptySchema         => Y
@@ -127,14 +126,17 @@ sealed trait RecordSchema extends SchemaLike:
   /** Type of the concatenation of two schemas. */
   type AppendOtherSchema[S2 <: RecordSchema] <: RecordSchema
 
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](s2: S2): RecordSchema.Concat[Type, S2]
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](
+      s2: S2
+  ): RecordSchema.Concat[Type, S2]
 
   @targetName("SchemaCons")
   inline def #:[P <: RecordProperty0](p: P): P #: Type =
     SchemaCons[P, Type](p, this)
 
-
-  transparent inline def ##:[Other <: RecordSchema, This >: this.type <: RecordSchema](inline other: Other) = 
+  transparent inline def ##:[Other <: RecordSchema, This >: this.type <: RecordSchema](
+      inline other: Other
+  ) =
     appendOtherSchema(other)
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
@@ -170,7 +172,9 @@ case object EmptySchema extends RecordSchema:
   inline def concat[S2 <: RecordSchema](inline schema2: S2): S2 =
     schema2
 
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](s2: S2): RecordSchema.Concat[Type,S2] =
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](
+      s2: S2
+  ): RecordSchema.Concat[Type, S2] =
     s2
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
@@ -182,7 +186,6 @@ case object EmptySchema extends RecordSchema:
   type Remove[P1 <: RecordProperty0] = EmptySchema
 
   transparent inline def remove[P1 <: RecordProperty0](p1: P1): Remove[P1] = EmptySchema
-
 
 sealed trait NonEmptySchema extends RecordSchema:
   type Properties <: NonEmptyTuple
@@ -205,11 +208,13 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
 
   type AppendOtherSchema[S2 <: RecordSchema] = SchemaCons[p.type, schema.AppendOtherSchema[S2]]
 
-  transparent inline def appendOtherSchema[S2 <: RecordSchema](s2: S2): RecordSchema.Concat[Type,S2] =
+  transparent inline def appendOtherSchema[S2 <: RecordSchema](
+      s2: S2
+  ): RecordSchema.Concat[Type, S2] =
     val res = (p #: schema.appendOtherSchema(s2))
-    res.asInstanceOf[RecordSchema.Concat[Type,S2]]
+    res.asInstanceOf[RecordSchema.Concat[Type, S2]]
 
-  inline def concat[S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[Type,S2] =
+  inline def concat[S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[Type, S2] =
     appendOtherSchema(schema2)
 
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
@@ -228,12 +233,12 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   transparent inline def remove[P1 <: RecordProperty0](p1: P1): Remove[P1] =
     inline p1 match
       case _: P => schema
-      case _    => 
+      case _ =>
         println(p)
         SchemaCons[P, schema.Remove[P1]](p, schema.remove(p1))
 
 infix type #:[P <: RecordProperty0, S <: RecordSchema] = SchemaCons[P, S]
-infix type ##:[S1 <: RecordSchema, S <: RecordSchema] = RecordSchema.Concat[S1, S]
+infix type ##:[S1 <: RecordSchema, S <: RecordSchema]  = RecordSchema.Concat[S1, S]
 
 object RecordSchema:
   type SimpleProperty[R0, N, S <: SchemaLike] = RecordProperty0 {

@@ -104,12 +104,22 @@ class Rel2Spec extends TestDataRel2:
     val s2 = Product.id #: Product.name #: EmptySchema
     s1 should equal(s2)
   }
-//   test("cross product") {
-//     val poi          = orderItems.crossProduct(products)
-//     val withoutPrice = Product.tableSchema.remove(Product.price)
-//     val s = OrderItem.tableSchema.concat(withoutPrice) // Product.id #: Product.name #: EmptySchema)
-//     // val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
-//     val res = poi.projection(s)
+  test("cross product") {
+    val poi          = orderItems.crossProduct(products)
+    poi.rows should equal(
+      List(
+        (1, 1, 1, 1, "product1", 5),
+        (1, 1, 1, 2, "product2", 20),
+        (2, 1, 1, 1, "product1", 5),
+        (2, 1, 1, 2, "product2", 20),
+        (3, 1, 2, 1, "product1", 5),
+        (3, 1, 2, 2, "product2", 20)
+      )
+    )
+    val withoutPrice = Product.tableSchema.remove(Product.price)
+    val s1 = OrderItem.tableSchema.concat(withoutPrice) // Product.id #: Product.name #: EmptySchema)
+    val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
+    // val res = poi.projection(s)
 //     res.rows should equal(
 //       List(
 //         (1, 1, 1, 1, "product1"),
@@ -122,47 +132,45 @@ class Rel2Spec extends TestDataRel2:
 //     )
 //     import res.schema._
 //     res.rows.head(Product.name) should equal("product1")
-//   }
+  }
 //   test("Extension methods to read/write property values") {
 //     import products.schema._
 //     (products.rows.head).apply(Product.name) should equal("product1")
 //     val product1updated = products.rows.head.updated(Product.name)("new name")
 //     product1updated(Product.name) should equal("new name")
 //   }
-//   test("Calculate column") {
-//     object price extends OrderItem.column[Long]
-//     val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
-//     val p        = orderItems.prependCalcColumn(price)(idGetter(_) * 10L)
-//     val s        = price #: OrderItem.tableSchema
-//     val res      = p.projection(s)
-//     res.show should equal(
-//       """price: long, id: int, orderId: int, productId: int
-//         |-----
-//         |(10,1,1,1)
-//         |(20,2,1,1)
-//         |(30,3,1,2)""".stripMargin
-//     )
-//   }
-//   test("Calculate column with expr") {
-//     object price extends OrderItem.column[Int]
-//     val p = orderItems.prependCalcColumn(price)({
-//       import orderItems._
-//       rowFun(prop(OrderItem.id) * const(10))
-//     })
-//     // TODO: test with a newer version of Scala
-//     // For some reason the following doesn't work:
-//     // prependCalcColumnF(price)({
-//     //   import orderItems._
-//     //   prop(OrderItem.id) * const(10)
-//     // })
-//     p.show should equal(
-//       """price: int, id: int, orderId: int, productId: int
-//         |-----
-//         |(10,1,1,1)
-//         |(20,2,1,1)
-//         |(30,3,1,2)""".stripMargin
-//     )
-//   }
+  test("Calculate column") {
+    object price extends OrderItem.column[Long]
+    // val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
+    val p        = orderItems.prependCalcColumn(price)(row => row._1 * 10L)
+    p.show should equal(
+      """price: long, id: int, orderId: int, productId: int
+        |-----
+        |(10,1,1,1)
+        |(20,2,1,1)
+        |(30,3,1,2)""".stripMargin
+    )
+  }
+  test("Calculate column with expr") {
+    object price extends OrderItem.column[Int]
+    val p = orderItems.prependCalcColumn(price)({
+      import orderItems._
+      rowFun(prop(OrderItem.id) * const(10))
+    })
+    // TODO: test with a newer version of Scala
+    // For some reason the following doesn't work:
+    val p2 = orderItems.prependCalcColumnF(price)({
+      import orderItems._
+      prop(OrderItem.id)// * const(10)
+    })
+    p.show should equal(
+      """price: int, id: int, orderId: int, productId: int
+        |-----
+        |(10,1,1,1)
+        |(20,2,1,1)
+        |(30,3,1,2)""".stripMargin
+    )
+  }
 //   test("Rename column") {
 //     object id2 extends OrderItem.column[Int]
 //     val p = orderItems.rename(OrderItem.id, id2)
@@ -174,23 +182,23 @@ class Rel2Spec extends TestDataRel2:
 //         |(3,1,2)""".stripMargin
 //     )
 //   }
-//   test("Filter") {
-//     val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
-//     object id2 extends OrderItem.column[Int]
-//     val p = orderItems.filter(idGetter(_) == 1)
-//     p.rows should equal(List(orderItem1))
-//   }
-//   test("Union") {
-//     val p = orderItems ++ orderItems
-//     p.rows.size should equal(orderItems.rows.size * 2)
-//   }
+  test("Filter") {
+    // val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
+    object id2 extends OrderItem.column[Int]
+    val p = orderItems.filter(_._1 == 1)
+    p.rows should equal(List(orderItem1))
+  }
+  test("Union") {
+    val p = orderItems ++ orderItems
+    p.rows.size should equal(orderItems.rows.size * 2)
+  }
 
-//   test("empty") {
-//     val p = Relation.empty[OrderItem.tableSchema.type, List](OrderItem.tableSchema)
-//     p.rows shouldBe empty
-//   }
-//   object sumPrice extends Product.column[BigInt]
-//   given ordering: Ordering[Tuple1[String]] = cats.kernel.Order[Tuple1[String]].toOrdering
+  test("empty") {
+    val p = Relation.empty[OrderItem.tableSchema.type, OrderItem.Row, List](OrderItem.tableSchema)
+    p.rows shouldBe empty
+  }
+  object sumPrice extends Product.column[BigInt]
+  given ordering: Ordering[Tuple1[String]] = cats.kernel.Order[Tuple1[String]].toOrdering
 
 //   test("Expenses report with a simple groupMapReduce") {
 //     // SELECT product.name, sum(product.price)
