@@ -1,11 +1,22 @@
 package ru.primetalk.typed.ontology.simple.meta
 
+/**
+  * Тип-аннотация, позволяющий привязать к произвольному значению сведения о схеме этого значения.
+  */
+sealed trait WithSchema[S <: SchemaLike]
+/** Приклеиваем к типу значения его схему. */
+type #@[A, S <: SchemaLike] = A & WithSchema[S]
+
+extension [A](a: A)
+  def annotated[S <: SchemaLike]: A #@ S = 
+    a.asInstanceOf[A #@ S]
 /** Type class that provides value type for the given schema. An instance of this class could be
   * used to retrieve type representation for the schema.
   */
 class SchemaValueType[S <: SchemaLike, V]:
   type Schema = S
   type Value = V
+  type AValue = V #@ S
 
 object SchemaValueType:
   def apply[S <: SchemaLike](using svt: SchemaValueType[S, ?]): svt.type =
