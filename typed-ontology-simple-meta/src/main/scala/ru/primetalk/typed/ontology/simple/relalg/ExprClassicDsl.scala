@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.simple.relalg
 
-import ru.primetalk.typed.ontology.simple.meta.Projector
+import ru.primetalk.typed.ontology.simple.meta.{Projector, PropertyProjector}
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
 import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
@@ -20,8 +20,8 @@ trait ExprClassicDsl:
       extends RelExpr[C]
 
   inline def prop[VP, P <: SimplePropertyId[?, VP]](p: P)(using
-      prj: Projector[Schema, Row, p.Schema, VP]
-  ): Getter[prj.to.Value] =
+      prj: PropertyProjector[Schema, Row, p.type, VP]
+  ): Getter[VP] =
     Getter(p.name, r => prj(r))
 
   inline def const[T](t: T): Getter[T] = Getter(s"$t", _ => t)

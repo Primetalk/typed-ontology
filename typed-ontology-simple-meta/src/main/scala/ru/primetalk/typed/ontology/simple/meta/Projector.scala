@@ -1,5 +1,11 @@
 package ru.primetalk.typed.ontology.simple.meta
 
+trait PropertyProjector[From <: RecordSchema, VFrom, P <: SimplePropertyId[?, VP], VP]:
+  val from: SchemaValueType[From, VFrom]
+  val rpvt: RecordPropertyValueType[P, VP]
+  type Value = VP
+  def apply(v: VFrom): VP
+
 trait Projector[From <: SchemaLike, VFrom, To <: SchemaLike, VTo]:
   val from: SchemaValueType[From, VFrom]
   val to: SchemaValueType[To, VTo]

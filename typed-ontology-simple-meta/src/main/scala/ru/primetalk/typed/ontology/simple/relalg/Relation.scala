@@ -48,7 +48,7 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
   transparent inline def projection[S2 <: RecordSchema, VS2 <: Tuple](s2: S2)(using
       proj: Projector[Schema, Row, S2, VS2],
       f: Functor[V]
-  ) =
+  ): Relation[S2, VS2, V] =
     val rsvt: SchemaValueType[S2, VS2] = proj.to
     val vals                           = rows.map(v => proj(v).asInstanceOf[rsvt.Value])
     Relation[S2, VS2, V](s2)(using rsvt)(vals)

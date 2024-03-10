@@ -50,8 +50,7 @@ trait RecordSchemaValueType[S <: RecordSchema]:
 /** Type class that returns the type of property value.
   */
 trait RecordPropertyValueType[P <: RecordProperty0, V]:
-  val property: P
-  type Schema = property.Schema
+  type Schema <: SchemaLike
   type Value = V
 
 object RecordPropertyValueType:

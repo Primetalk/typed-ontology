@@ -7,6 +7,6 @@ object SimpleTypesMacro:
   def propertyValueType1Impl[B: Type, P <: SimplePropertyId[?, B]: Type](vp: Expr[ValueOf[P]])(using Quotes): Expr[RecordPropertyValueType[P, B]] =
     '{
       new RecordPropertyValueType[P, B]{
-        val property: P = ($vp).value
+        type Schema = ScalarSchema1[B]
       }
     }

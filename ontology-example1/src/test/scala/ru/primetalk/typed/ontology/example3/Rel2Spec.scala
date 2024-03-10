@@ -16,7 +16,7 @@ import SimpleTypes.{given, *}
 import scala.collection.immutable.SortedMap
 import cats.MonoidK
 import cats.Applicative
-import ru.primetalk.typed.ontology.simple.meta.Projector
+import ru.primetalk.typed.ontology.simple.meta.{Projector, PropertyProjector}
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
 import ru.primetalk.typed.ontology.simple.meta.RecordPropertyValueType
 
@@ -40,8 +40,10 @@ class Rel2Spec extends TestDataRel2:
     assertResult("id: int")(Product.id.toString)
   }
   test("availability of Projector") {
-    val p0 = summon[Projector[Product.id.type #: EmptySchema, ?, EmptySchema, ?]]
-    val p1 = summon[Projector[Product.id.type #: EmptySchema, ?, Product.id.type #: EmptySchema, ?]]
+    val p0 = summon[Projector[Product.Id #: EmptySchema, ?, EmptySchema, ?]]
+    val p1 = summon[Projector[Product.Id #: EmptySchema, ?, Product.Id #: EmptySchema, ?]](
+      using someSchemaPlusPropertyProjector
+    )
     val pKey                = summon[Projector[Product.TableSchema, ?, Product.PrimaryKeySchema, ?]]
     val svt                 = summon[SchemaValueType.Aux1[Product.TableSchema]]
     val product1: svt.Value = (1, "name", BigInt(1))
@@ -145,8 +147,8 @@ class Rel2Spec extends TestDataRel2:
     val t1priceSvt= summon[SchemaValueType.Aux1[Product.PriceSchema]]
     val t2namepriceSvt= summon[SchemaValueType.Aux1[Product.NamePriceSchema]]
     val prjPrice =
-      summon[Projector[Product.PriceSchema, t1priceSvt.Value, Product.price.Schema, BigInt]]
-    val prjPrice2I = propertyProjectorOther[
+      summon[PropertyProjector[Product.PriceSchema, t1priceSvt.Value, Product.Price, BigInt]]
+    val prjPrice2I = propertyProjectorTail[
       BigInt,
       Product.Price,
       String,
@@ -157,19 +159,20 @@ class Rel2Spec extends TestDataRel2:
       Tuple1[BigInt]
       ]//(using priceRpvt, prjPrice, t2namepriceSvt)
     val prjPrice2 =
-      summon[Projector[Product.NamePriceSchema, t2namepriceSvt.Value, Product.price.Schema, BigInt]](
+      summon[PropertyProjector[Product.NamePriceSchema, t2namepriceSvt.Value, Product.price.type, BigInt]](
         using
         prjPrice2I
       )
     // val prjPrice2o =
     //   summon[Projector[Product.NamePriceSchema, t2namepriceSvt.Value, Product.price.Schema, BigInt]]
     val prjPrice3 =
-      summon[Projector[Product.TableSchema, svt.Value, Product.price.Schema, BigInt]](
+      summon[PropertyProjector[Product.TableSchema, svt.Value, Product.price.type, BigInt]](
         using
-        propertyProjectorOther(using priceRpvt, prjPrice2, svt)
+        propertyProjectorTail//(using priceRpvt, prjPrice2, svt)
       )
-    // val prj = summon[Projector[Product.TableSchema, svt.Value, Product.name.Schema, String]](using propertyProjectorOther)
+    val prj = summon[PropertyProjector[Product.TableSchema, svt.Value, Product.name.type, String]]//(using propertyProjectorOther)
     val v: svt.Value = products.rows.head
+    new ValueOps(v)(using svt)/Product.name1 should equal("product1")
     // new ValueOps(v)(using svt)./(Product.name) should equal("product1")
     // val product1updated = products.rows.head.updated(Product.name)("new name")
     // product1updated(Product.name) should equal("new name")

@@ -11,7 +11,8 @@ object Product extends TableBuilder:
   type Id = id1.type 
   //type Id = id.type // Scala 3 bug
   object name  extends column[String]
-  type Name = name.type
+  val name1 = name
+  type Name = name1.type
   object price extends column[BigInt]
   type Price = price.type
   type PriceSchema = Price #: EmptySchema
