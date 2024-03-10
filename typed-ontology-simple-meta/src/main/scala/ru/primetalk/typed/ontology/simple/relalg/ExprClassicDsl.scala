@@ -2,9 +2,9 @@ package ru.primetalk.typed.ontology.simple.relalg
 
 import ru.primetalk.typed.ontology.simple.meta.Projector
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
-import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
 import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
 
 trait ExprClassicDsl:
   type Schema <: RecordSchema
@@ -19,8 +19,8 @@ trait ExprClassicDsl:
   case class Function2Expr[A, B, C](r1: RelExpr[A], r2: RelExpr[B], name: String, op: (A, B) => C)
       extends RelExpr[C]
 
-  inline def prop[P <: RecordProperty0, VP](p: P)(using
-      prj: Projector[schema.type, Row, p.Schema, VP]
+  inline def prop[VP, P <: SimplePropertyId[?, VP]](p: P)(using
+      prj: Projector[Schema, Row, p.Schema, VP]
   ): Getter[prj.to.Value] =
     Getter(p.name, r => prj(r))
 

@@ -59,11 +59,11 @@ trait RelationList:
 object RelationList:
   transparent inline def apply[S <: RecordSchema](
       s: S
-  )(using svt: SchemaValueType.Aux1[s.type])(inline data: List[svt.Value]) =
+  )(using svt: SchemaValueType.Aux1[S])(inline data: List[svt.Value]) =
     new RelationList {
-      type Schema = s.type
+      type Schema = S
       val schema                            = s
-      val svt: SchemaValueType.Aux1[s.type] = summon[SchemaValueType.Aux1[s.type]]
+      val svt: SchemaValueType.Aux1[S] = summon[SchemaValueType.Aux1[S]]
       val rows                              = data.asInstanceOf[List[Row]]
     }
 

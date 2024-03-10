@@ -18,6 +18,7 @@ import cats.MonoidK
 import cats.Applicative
 import ru.primetalk.typed.ontology.simple.meta.Projector
 import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.RecordPropertyValueType
 
 trait TestDataRel2 extends BaseSpec:
   val product1: Product.Row = (1, "product1", BigInt(5))
@@ -38,11 +39,11 @@ class Rel2Spec extends TestDataRel2:
     println(Product.id.toString)
     assertResult("id: int")(Product.id.toString)
   }
-  test("availability of Projector"){
+  test("availability of Projector") {
     val p0 = summon[Projector[Product.id.type #: EmptySchema, ?, EmptySchema, ?]]
     val p1 = summon[Projector[Product.id.type #: EmptySchema, ?, Product.id.type #: EmptySchema, ?]]
-    val pKey = summon[Projector[Product.TableSchema, ?, Product.PrimaryKeySchema, ?]]
-    val svt = summon[SchemaValueType.Aux1[Product.TableSchema]]
+    val pKey                = summon[Projector[Product.TableSchema, ?, Product.PrimaryKeySchema, ?]]
+    val svt                 = summon[SchemaValueType.Aux1[Product.TableSchema]]
     val product1: svt.Value = (1, "name", BigInt(1))
     val product2: Product.Row = (1, "name", BigInt(1))
     pKey.apply(product1)
@@ -78,12 +79,12 @@ class Rel2Spec extends TestDataRel2:
     val s1: S1 = RecordSchema.constSchema[S1]
     s1 should equal(s2)
   }
-  test("Check Product.id"){
+  test("Check Product.id") {
     val id = Product.id
     id should equal(id)
     s"$id" should equal("id: int")
   }
-  
+
   test("Check schema") {
     val s1 = Product.tableSchema
     val s2 = Product.id #: Product.name #: Product.price #: EmptySchema
@@ -105,7 +106,7 @@ class Rel2Spec extends TestDataRel2:
     s1 should equal(s2)
   }
   test("cross product") {
-    val poi          = orderItems.crossProduct(products)
+    val poi = orderItems.crossProduct(products)
     poi.rows should equal(
       List(
         (1, 1, 1, 1, "product1", 5),
@@ -117,8 +118,11 @@ class Rel2Spec extends TestDataRel2:
       )
     )
     val withoutPrice = Product.tableSchema.remove(Product.price)
-    val s1 = OrderItem.tableSchema.concat(withoutPrice) // Product.id #: Product.name #: EmptySchema)
-    val s = OrderItem.tableSchema.concat(Product.idNameSchema)// Product.id #: Product.name #: EmptySchema)
+    val s1 =
+      OrderItem.tableSchema.concat(withoutPrice) // Product.id #: Product.name #: EmptySchema)
+    val s = OrderItem.tableSchema.concat(
+      Product.idNameSchema
+    ) // Product.id #: Product.name #: EmptySchema)
     // val res = poi.projection(s)
 //     res.rows should equal(
 //       List(
@@ -133,16 +137,47 @@ class Rel2Spec extends TestDataRel2:
 //     import res.schema._
 //     res.rows.head(Product.name) should equal("product1")
   }
-//   test("Extension methods to read/write property values") {
-//     import products.schema._
-//     (products.rows.head).apply(Product.name) should equal("product1")
-//     val product1updated = products.rows.head.updated(Product.name)("new name")
-//     product1updated(Product.name) should equal("new name")
-//   }
+  test("Extension methods to read/write property values") {
+    import products.schema._
+    val svt       = summon[SchemaValueType.Aux1[Product.TableSchema]]
+    val priceRpvt = summon[RecordPropertyValueType[Product.Price, BigInt]]
+    val priceSvt  = summon[SchemaValueType.Aux1[priceRpvt.Schema]]
+    val t1priceSvt= summon[SchemaValueType.Aux1[Product.PriceSchema]]
+    val t2namepriceSvt= summon[SchemaValueType.Aux1[Product.NamePriceSchema]]
+    val prjPrice =
+      summon[Projector[Product.PriceSchema, t1priceSvt.Value, Product.price.Schema, BigInt]]
+    val prjPrice2I = propertyProjectorOther[
+      BigInt,
+      Product.Price,
+      String,
+      Product.Name,
+
+      Product.PriceSchema,
+      // Product.NamePriceSchema,
+      Tuple1[BigInt]
+      ]//(using priceRpvt, prjPrice, t2namepriceSvt)
+    val prjPrice2 =
+      summon[Projector[Product.NamePriceSchema, t2namepriceSvt.Value, Product.price.Schema, BigInt]](
+        using
+        prjPrice2I
+      )
+    // val prjPrice2o =
+    //   summon[Projector[Product.NamePriceSchema, t2namepriceSvt.Value, Product.price.Schema, BigInt]]
+    val prjPrice3 =
+      summon[Projector[Product.TableSchema, svt.Value, Product.price.Schema, BigInt]](
+        using
+        propertyProjectorOther(using priceRpvt, prjPrice2, svt)
+      )
+    // val prj = summon[Projector[Product.TableSchema, svt.Value, Product.name.Schema, String]](using propertyProjectorOther)
+    val v: svt.Value = products.rows.head
+    // new ValueOps(v)(using svt)./(Product.name) should equal("product1")
+    // val product1updated = products.rows.head.updated(Product.name)("new name")
+    // product1updated(Product.name) should equal("new name")
+  }
   test("Calculate column") {
     object price extends OrderItem.column[Long]
     // val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
-    val p        = orderItems.prependCalcColumn(price)(row => row._1 * 10L)
+    val p = orderItems.prependCalcColumn(price)(row => row._1 * 10L)
     p.show should equal(
       """price: long, id: int, orderId: int, productId: int
         |-----
@@ -161,7 +196,7 @@ class Rel2Spec extends TestDataRel2:
     // For some reason the following doesn't work:
     val p2 = orderItems.prependCalcColumnF(price)({
       import orderItems._
-      prop(OrderItem.id)// * const(10)
+      prop(OrderItem.id) // * const(10)
     })
     p.show should equal(
       """price: int, id: int, orderId: int, productId: int
@@ -194,7 +229,7 @@ class Rel2Spec extends TestDataRel2:
   }
 
   test("empty") {
-    val p = Relation.empty[OrderItem.tableSchema.type, OrderItem.Row, List](OrderItem.tableSchema)
+    val p = Relation.empty[OrderItem.TableSchema, OrderItem.Row, List](OrderItem.tableSchema)
     p.rows shouldBe empty
   }
   object sumPrice extends Product.column[BigInt]

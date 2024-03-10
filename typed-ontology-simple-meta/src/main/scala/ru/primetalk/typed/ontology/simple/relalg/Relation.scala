@@ -13,11 +13,12 @@ import scala.collection.immutable.SortedMap
 import cats.Applicative
 import ru.primetalk.typed.ontology.simple.meta.{#:, ##:, 
   Concatenator, ForeignKeyId0, Projector, RecordSchema, 
-  RecordProperty, RecordProperty0, TableBuilder, SchemaValueType,
+  RecordProperty, TableBuilder, SchemaValueType,
   RecordSchemaValueType, EmptySchema}
 import cats.syntax.flatMap.given
 import cats.syntax.functor.given
 import cats.syntax.foldable.given
+import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
 
 /** Relation is a pair of schema and a collection of instances of that schema. V - is the collection
   * type (List, Stream[...]).
@@ -61,7 +62,7 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
       VRes
   ](r1: R1)(using
       fm: FlatMap[V],
-      concat: Concatenator[r1.schema.type, VS1, this.schema.type, VS, VRes]
+      concat: Concatenator[S1, VS1, S, VS, VRes]
   )(using
       ev1: r1.Row =:= concat.aSvt.Value
       // ev2: Row =:= concat.bSvt.Value
@@ -79,7 +80,7 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
       r2: R2
   )(using
       fm: FlatMap[V],
-      concat: Concatenator[this.schema.type, VS, r2.schema.type, VS2, VRes]
+      concat: Concatenator[S, VS, S2, VS2, VRes]
   ): Relation[concat.Schema, concat.abSvt.Value, V] =
     type S = concat.Schema
     val schema3: S = concat.schemaConcat(schema, r2.schema)
@@ -110,11 +111,11 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
 //   val filtered = vals.filter(pred)
 //   Relation[schema3.type, V](schema3)(filtered)
 
-  transparent inline def prependCalcColumn[P <: RecordProperty0, T, VRes](p: P)(
+  transparent inline def prependCalcColumn[T, P <: SimplePropertyId[?, T], VRes](p: P)(
     using 
     sv: SchemaValueType[P #: EmptySchema, Tuple1[T]], 
     fm: FlatMap[V],
-    concat: Concatenator[P #: EmptySchema, Tuple1[T], this.schema.type, VS, VRes],
+    concat: Concatenator[P #: EmptySchema, Tuple1[T], Schema, VS, VRes],
 )(
       f: VS => T) =
     val pSchema = p #: EmptySchema
@@ -126,11 +127,11 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
     }
     Relation[concat.Schema, concat.abSvt.Value, V](schema3)(using concat.abSvt)(vals)
 
-  transparent inline def prependCalcColumnF[P <: RecordProperty0, T, VRes](p: P)(inline f: RelExpr[T])(
+  transparent inline def prependCalcColumnF[T, P <: SimplePropertyId[?, T], VRes](p: P)(inline f: RelExpr[T])(
     using 
     sv: SchemaValueType[P #: EmptySchema, Tuple1[T]], 
     fm: FlatMap[V],
-    concat: Concatenator[P #: EmptySchema, Tuple1[T], this.schema.type, VS, VRes]
+    concat: Concatenator[P #: EmptySchema, Tuple1[T], Schema, VS, VRes]
   ) =
     prependCalcColumn(p)(rowFun(f))
 

@@ -14,6 +14,8 @@ object Product extends TableBuilder:
   type Name = name.type
   object price extends column[BigInt]
   type Price = price.type
+  type PriceSchema = Price #: EmptySchema
+  type NamePriceSchema = Name #: Price #: EmptySchema
   type TableSchema = Id #: Name #: Price #: EmptySchema
   val tableSchema: TableSchema = fields(id, name, price)
   val idNameSchema             = fields(id, name)

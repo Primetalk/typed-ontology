@@ -16,12 +16,12 @@ class ProductSpec:
   type IdRecord = id.type #: EmptySchema
   val idRecord                  = id #: EmptySchema
   val idValue: ValueOf[id.type] = summon[ValueOf[id.type]]
-  val p                         = propertyValueType[id.type]
+  // val p                         = propertyValueType[id.type]
 
   val idSchemaSvt =
     summon[SchemaValueType.Aux1[id.Schema]] // (using scalarSchema1svt[Int, id.Schema])
 
-  val idRecordSvt1 = tuple1Schema[id.type]
+  val idRecordSvt1 = tuple1Schema[Int, id.type]
   val idRecordSvt  = summon[RecordSchemaValueType[IdRecord]] // (using tuple1Schema)
   val idRecordSvt0: RecordSchemaValueType[IdRecord] = idRecordSvt
   val i: idRecordSvt.Value                          = Tuple1(10)

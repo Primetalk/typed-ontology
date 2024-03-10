@@ -1,9 +1,15 @@
 package ru.primetalk.typed.ontology.simple.meta
 
+import org.junit.Test
+
 class TupleSimpleTypesSpec:
 
   import Product.{given, *}
-  object SimpleTypes1 extends TupleSimpleTypes with ScalarSimpleTypes with ConversionSimpleTypes
+  object SimpleTypes1 extends TupleSimpleTypes 
+    with ScalarSimpleTypes 
+    with ConversionSimpleTypes 
+    with PropertySimpleTypes
+
   import SimpleTypes1.{given, *}
 
   import ScalarSchema1.given
@@ -25,3 +31,12 @@ class TupleSimpleTypesSpec:
   val scalar2 = NonEmptyTupleSchema(intSchema, NonEmptyTupleSchema(stringSchema, EmptyTupleSchema))
   val scalar2Svt = summon[SchemaValueType.Aux1[scalar2.type]] // (using nonEmptyTupleSchema)
   val evScalar2  = summon[scalar2Svt.Value =:= (Int, String)]
+
+  implicit val name1: Product.name.type = Product.name
+  
+  val rpvt1 = propertyValueType[String, Product.Name]
+  @Test def checkProperty =
+    assert(rpvt1.property == Product.name)
+    
+  val rpvt = summon[RecordPropertyValueType[Product.Name, String]]
+  summon[rpvt.Value =:= String]

@@ -49,5 +49,12 @@ trait RecordSchemaValueType[S <: RecordSchema]:
 
 /** Type class that returns the type of property value.
   */
-trait RecordPropertyValueType[P <: RecordProperty0]:
-  type Value
+trait RecordPropertyValueType[P <: RecordProperty0, V]:
+  val property: P
+  type Schema = property.Schema
+  type Value = V
+
+object RecordPropertyValueType:
+  def apply[P <: RecordProperty0](using rpvt: RecordPropertyValueType[P, ?]): rpvt.type =
+    rpvt
+  type Aux1[P <: RecordProperty0] = RecordPropertyValueType[P, ?]
