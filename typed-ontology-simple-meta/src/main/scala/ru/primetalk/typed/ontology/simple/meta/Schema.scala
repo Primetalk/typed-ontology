@@ -142,7 +142,7 @@ sealed trait RecordSchema extends SchemaLike:
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
       inline p1: P1,
       inline p2: P2
-  ): RecordSchema
+  ): RecordSchema.Replace[P1, P2, this.type]
 
   /** Replaces properties of the same type. A bit more restricted version of replace. */
   transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](
@@ -180,7 +180,7 @@ case object EmptySchema extends RecordSchema:
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
       inline p1: P1,
       inline p2: P2
-  ): RecordSchema =
+  ): RecordSchema.Replace[P1, P2, this.type] =
     EmptySchema
 
   type Remove[P1 <: RecordProperty0] = EmptySchema
@@ -220,10 +220,13 @@ final case class SchemaCons[P <: RecordProperty0, S <: RecordSchema](p: P, schem
   transparent inline def replace[P1 <: RecordProperty0, P2 <: RecordProperty0](
       inline p1: P1,
       inline p2: P2
-  ): RecordSchema =
-    inline p1 match
-      case `p` => p2 #: schema
-      case _   => p #: schema.replace(p1, p2)
+  ): RecordSchema.Replace[P1, P2, this.type] =
+    inline this match
+      case _: EmptySchema       => EmptySchema
+      case v: SchemaCons[P1, s] => 
+        v.copy(p = p2)
+      case v: SchemaCons[pt, s] => 
+        v.copy(schema = schema.asInstanceOf[s].replace(p1, p2))
 
   type Remove[P1 <: RecordProperty0] <: RecordSchema =
     P1 match
@@ -321,6 +324,12 @@ object RecordSchema:
       case EmptySchema        => EmptySchema.type
       case SchemaCons[P1, st] => st
       case SchemaCons[pt, st] => SchemaCons[pt, Remove[P1, st]]
+
+  type Replace[P1 <: RecordProperty0, P2 <: RecordProperty0, S <: RecordSchema] <: RecordSchema =
+    S match
+      case EmptySchema        => EmptySchema.type
+      case SchemaCons[P1, st] => SchemaCons[P2, st]
+      case SchemaCons[pt, st] => SchemaCons[pt, Replace[P1, P2, st]]
 
   type IsPropertyInSchema[P <: RecordProperty0, Schema <: RecordSchema] <: Boolean =
     Schema match

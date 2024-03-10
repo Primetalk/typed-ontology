@@ -218,30 +218,33 @@ trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
   transparent inline given nonEmptyConcatenator[
       VP,
       P <: SimplePropertyId[?, VP],
+
       S <: RecordSchema,
       VS <: Tuple,
+
       B <: RecordSchema,
       VB <: Tuple,
-      VPSB <: Tuple
+
+      VSB <: Tuple
   ](using
       svtS: SchemaValueType[S, VS],
       svtA: SchemaValueType[P #: S, VP *: VS],
       svtB: SchemaValueType[B, VB],
-      concatSB: Concatenator[S, VS, B, VB, VPSB],
-      svt: SchemaValueType[SchemaCons[P, concatSB.Schema], VP *: VPSB]
-  ): Concatenator[P #: S, VP *: VS, B, VB, VP *: VPSB] =
+      concatSB: Concatenator[S, VS, B, VB, VSB],
+      svt: SchemaValueType[P #: concatSB.Schema, VP *: VSB]
+  ): Concatenator[P #: S, VP *: VS, B, VB, VP *: VSB] =
     new:
       val aSvt = svtA
       val bSvt = svtB
 
-      type Schema = SchemaCons[P, concatSB.Schema]
+      type Schema = P #: concatSB.Schema
 
       def schemaConcat(a: P #: S, b: B): Schema =
         a.appendOtherSchema(b)
 
-      val abSvt: SchemaValueType[SchemaCons[P, concatSB.Schema], VP *: VPSB] = svt
+      val abSvt: SchemaValueType[Schema, VP *: VSB] = svt
 
-      def apply(a: VP *: VS, b: VB): VP *: VPSB =
+      def apply(a: VP *: VS, b: VB): VP *: VSB =
         Tuples.concat(a, b).asInstanceOf[abSvt.Value]
 
 object SimpleTypes

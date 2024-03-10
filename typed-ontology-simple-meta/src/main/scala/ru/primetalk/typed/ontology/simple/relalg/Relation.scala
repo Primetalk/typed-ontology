@@ -19,6 +19,7 @@ import cats.syntax.flatMap.given
 import cats.syntax.functor.given
 import cats.syntax.foldable.given
 import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
+import scala.compiletime.summonInline
 
 /** Relation is a pair of schema and a collection of instances of that schema. V - is the collection
   * type (List, Stream[...]).
@@ -113,12 +114,11 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
 
   transparent inline def prependCalcColumn[T, P <: SimplePropertyId[?, T], VRes](p: P)(
     using 
-    sv: SchemaValueType[P #: EmptySchema, Tuple1[T]], 
+    sv: SchemaValueType[p.type #: EmptySchema, Tuple1[T]], 
     fm: FlatMap[V],
-    concat: Concatenator[P #: EmptySchema, Tuple1[T], Schema, VS, VRes],
-)(
-      f: VS => T) =
-    val pSchema = p #: EmptySchema
+    concat: Concatenator[p.type #: EmptySchema, Tuple1[T], Schema, VS, VRes],
+)(f: VS => T) =
+    val pSchema: p.type #: EmptySchema = p #: EmptySchema
     
     val schema3 = concat.schemaConcat(pSchema, schema)
     val vals    = rows.map{row => 
@@ -129,21 +129,26 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
 
   transparent inline def prependCalcColumnF[T, P <: SimplePropertyId[?, T], VRes](p: P)(inline f: RelExpr[T])(
     using 
-    sv: SchemaValueType[P #: EmptySchema, Tuple1[T]], 
+    sv: SchemaValueType[p.type #: EmptySchema, Tuple1[T]], 
     fm: FlatMap[V],
-    concat: Concatenator[P #: EmptySchema, Tuple1[T], Schema, VS, VRes]
+    concat: Concatenator[p.type #: EmptySchema, Tuple1[T], Schema, VS, VRes]
   ) =
-    prependCalcColumn(p)(rowFun(f))
+    val fun = rowFun(f)
+    prependCalcColumn(p)(fun)
 
   // type Rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]] <: RecordSchema
-  // transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](
-  //     inline p1: P1,
-  //     p2: P2,
-  //     svt3: SchemaValueType[schema.Rename[T, P1, P2], ]
-  // )(using Functor[V]): Rename[T, P1, P2] =
-  //   val schema3 = schema.rename(p1, p2)
-  //   val vals    = rows.asInstanceOf[V[schema3.Values]] // to avoid iteration and map
-  //   Relation[schema3.type, V](schema3)(vals)
+  transparent inline def rename[T, P1 <: RecordProperty[T], P2 <: RecordProperty[T]](
+      inline p1: P1,
+      p2: P2,
+      // svt3: SchemaValueType[RecordSchema.Replace[P1, P2, Schema], Row]
+  )(using Functor[V]) = //: Rename[T, P1, P2] =
+    val schema3 = schema.rename(p1, p2).asInstanceOf[RecordSchema.Replace[P1, P2, Schema]]
+    type Schema1 = Schema
+    val svt3    = new SchemaValueType[RecordSchema.Replace[P1, P2, Schema], Row]:
+      type Schema = RecordSchema.Replace[P1, P2, Schema1]
+      type Value  = Row
+    val vals    = rows//.asInstanceOf[V[schema3.Values]] // to avoid iteration and map
+    Relation[RecordSchema.Replace[P1, P2, Schema], Row, V](schema3)(using svt3)(vals)
 
   transparent inline def ++[R2 <: Relation[S, VS, V]](r2: R2)(using SemigroupK[V])(using Functor[V]) =
     import cats.syntax.all.toSemigroupKOps

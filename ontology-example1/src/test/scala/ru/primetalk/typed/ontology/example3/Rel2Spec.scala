@@ -125,19 +125,19 @@ class Rel2Spec extends TestDataRel2:
     val s = OrderItem.tableSchema.concat(
       Product.idNameSchema
     ) // Product.id #: Product.name #: EmptySchema)
-    // val res = poi.projection(s)
-//     res.rows should equal(
-//       List(
-//         (1, 1, 1, 1, "product1"),
-//         (1, 1, 1, 2, "product2"),
-//         (2, 1, 1, 1, "product1"),
-//         (2, 1, 1, 2, "product2"),
-//         (3, 1, 2, 1, "product1"),
-//         (3, 1, 2, 2, "product2")
-//       )
-//     )
-//     import res.schema._
-//     res.rows.head(Product.name) should equal("product1")
+    val res = poi.projection(s)
+    res.rows should equal(
+      List(
+        (1, 1, 1, 1, "product1"),
+        (1, 1, 1, 2, "product2"),
+        (2, 1, 1, 1, "product1"),
+        (2, 1, 1, 2, "product2"),
+        (3, 1, 2, 1, "product1"),
+        (3, 1, 2, 2, "product2")
+      )
+    )
+    // import res.schema._
+    // res.rows.head(Product.name) should equal("product1")
   }
   test("Extension methods to read/write property values") {
     import products.schema._
@@ -191,16 +191,18 @@ class Rel2Spec extends TestDataRel2:
   }
   test("Calculate column with expr") {
     object price extends OrderItem.column[Int]
-    val p = orderItems.prependCalcColumn(price)({
-      import orderItems._
-      rowFun(prop(OrderItem.id) * const(10))
-    })
+    import orderItems._
+    val p = orderItems.prependCalcColumn(price)(
+      rowFun:
+        prop(OrderItem.id) * const(10)
+    )
     // TODO: test with a newer version of Scala
     // For some reason the following doesn't work:
-    val p2 = orderItems.prependCalcColumnF(price)({
-      import orderItems._
-      prop(OrderItem.id) // * const(10)
-    })
+    import orderItems._
+    val expr = prop(OrderItem.id) * const(10)
+    val p2 = orderItems.prependCalcColumnF(price)(
+      prop(OrderItem.id)// * const(10)
+    )
     p.show should equal(
       """price: int, id: int, orderId: int, productId: int
         |-----
@@ -209,17 +211,17 @@ class Rel2Spec extends TestDataRel2:
         |(30,3,1,2)""".stripMargin
     )
   }
-//   test("Rename column") {
-//     object id2 extends OrderItem.column[Int]
-//     val p = orderItems.rename(OrderItem.id, id2)
-//     p.show should equal(
-//       """id2: int, orderId: int, productId: int
-//         |-----
-//         |(1,1,1)
-//         |(2,1,1)
-//         |(3,1,2)""".stripMargin
-//     )
-//   }
+  test("Rename column") {
+    object id2 extends OrderItem.column[Int]
+    val p = orderItems.rename(OrderItem.id, id2)
+    p.show should equal(
+      """id2: int, orderId: int, productId: int
+        |-----
+        |(1,1,1)
+        |(2,1,1)
+        |(3,1,2)""".stripMargin
+    )
+  }
   test("Filter") {
     // val idGetter = orderItems.schema.propertyGetter(OrderItem.id)
     object id2 extends OrderItem.column[Int]
