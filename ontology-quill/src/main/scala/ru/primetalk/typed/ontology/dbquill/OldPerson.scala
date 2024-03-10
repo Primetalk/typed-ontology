@@ -4,9 +4,12 @@ import io.getquill.*
 import io.getquill.context.ContextOperation
 import ru.primetalk.typed.ontology.simple.meta.SchemaProvider
 import ru.primetalk.typed.ontology.dbquill.parser.{CustomOps, CustomParser}
+import io.getquill.ast.{Ast, Entity}
+import io.getquill.quat.Quat
+
+case class OldPerson(firstName: String, lastName: String, age: Int) derives SchemaProvider
 
 object OldPersonApp {
-  case class OldPerson(firstName: String, lastName: String, age: Int) derives SchemaProvider
 
   val provider = SchemaProvider[OldPerson]
   val personSchema = provider.schema
@@ -23,6 +26,21 @@ object OldPersonApp {
     inline def personQuillSchema = quote {
       querySchema[OldPerson]("person")
     }
+    println(s"AST=${personQuillSchema.ast}")
+    println(s"AST.quat=${personQuillSchema.ast.quat}")
+    println(s"lifts=${personQuillSchema.lifts}")
+    personQuillSchema.ast match
+      case e@Entity(name, properties, quat) =>
+        println(s"Entity($name, $properties, $quat, renamable = ${e.renameable})") 
+        println(s"Quat.Product(${quat.name}, ${quat.fields}, ${quat.renames}, ${quat.tpe})")
+    //     val name: String,
+    // val fields: mutable.LinkedHashMap[String, Quat],
+    // override val renames: mutable.LinkedHashMap[String, String],
+    // val tpe: Quat.Product.Type
+    //     quat match
+    //       case Quat.Product() => 
+        
+      case _ => 
     inline def personQuillSchemaAgePower = quote {
       personQuillSchema.map(p => p.age ** 2)
     }

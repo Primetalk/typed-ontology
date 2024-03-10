@@ -31,7 +31,7 @@ import io.getquill.generic.GenericEncoder
 // }
 
 class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: SchemaValueType[S, T])
-    extends EntityQuery[AV] {
+    extends EntityQuery[T] {
   // override def withFilter(f: T => Boolean): EntityQuery[T] = NonQuotedException()
   // override def filter(f: T => Boolean): EntityQuery[T] = NonQuotedException()
   // override def map[R](f: T => R): EntityQuery[R] = NonQuotedException()
@@ -44,12 +44,12 @@ extension [T <: TableBuilder](t: T)
   inline def query(using
       svt: SchemaValueType.Aux1[t.TableSchema]
   ): OntEntityQuery[t.TableSchema, svt.Value, svt.AValue] =
-    ontquery[t.TableSchema, svt.Value](t.tableName)
+    ontquery[t.TableSchema, svt.Value, svt.AValue](t.tableName)
 
-inline def ontquery[S <: SchemaLike, T](tableName: String)(using
+inline def ontquery[S <: SchemaLike, T, AV <: T#@S](tableName: String)(using
     svt: SchemaValueType[S, T]
-): OntEntityQuery[S, T, svt.AValue] =
-  new OntEntityQuery[S, T, svt.AValue](tableName, svt) // NonQuotedException()
+): OntEntityQuery[S, T, AV] =
+  new OntEntityQuery[S, T, AV](tableName, svt) // NonQuotedException()
 
 class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
     extends Parser(rootParse)
