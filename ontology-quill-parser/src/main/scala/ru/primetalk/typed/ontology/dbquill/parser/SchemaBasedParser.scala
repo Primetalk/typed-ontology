@@ -24,7 +24,7 @@ import ru.primetalk.typed.ontology.simple.relalg.Relation
 import io.getquill.generic.GenericDecoder
 import io.getquill.generic.DecodingType
 import io.getquill.generic.GenericEncoder
-
+import io.getquill.querySchema
 // object OntEntityQuery {
 //   def apply[S <: SchemaLike, T](tableName: String, svt: SchemaValueType[S, T]) =
 //     new OntEntityQuery[S, T, svt.AValue](tableName, svt)
@@ -40,16 +40,23 @@ class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: Sch
 object MyTestEntity
 object MyTestEntity2
 
-extension [T <: TableBuilder](t: T)
-  inline def query(using
-      svt: SchemaValueType.Aux1[t.TableSchema]
-  ): OntEntityQuery[t.TableSchema, svt.Value, svt.AValue] =
-    ontquery[t.TableSchema, svt.Value, svt.AValue](t.tableName)
+// extension [T <: TableBuilder](t: T)
+//   inline def query(using
+//       svt: SchemaValueType.Aux1[t.TableSchema],
 
-inline def ontquery[S <: SchemaLike, T, AV <: T#@S](tableName: String)(using
+//   )= //: OntEntityQuery[t.TableSchema, svt.Value, svt.AValue] =
+//     ontquery[t.TableSchema, svt.Value, svt.AValue](t.tableName)
+
+transparent inline def ontquery[S <: SchemaLike, T <: Tuple, AV <: T#@S](tableName: String)(using
     svt: SchemaValueType[S, T]
-): OntEntityQuery[S, T, AV] =
-  new OntEntityQuery[S, T, AV](tableName, svt) // NonQuotedException()
+) = ${
+  SchemaBasedParserMacros.ontqueryImpl[S, T, AV]('tableName, 'svt)
+}
+  // querySchema[T](tableName)
+  //   .map{t => 
+  //     tupleConverter(t)
+  //   }
+  // new OntEntityQuery[S, T, AV](tableName, svt) // NonQuotedException()
 
 class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
     extends Parser(rootParse)
@@ -121,16 +128,16 @@ object SchemaBasedParser extends ParserLibrary:
       ParserChain.attempt(QueryParser(_))
   // (using svt: SchemaValueType[S, V])
   
-  inline given svtGenericDecoder[S <: SchemaLike: Type, V: Type, ResultRow: Type, Session]
-      : GenericDecoder[ResultRow, Session, V #@ S, DecodingType.Specific] =
+  inline given svtGenericDecoder[S <: SchemaLike: Type, V <: Tuple: Type, ResultRow: Type, Session]
+      : GenericDecoder[ResultRow, Session, TupleConverter[V] #@ S, DecodingType.Specific] =
     new:
-      def apply(i: Int, rr: ResultRow, s: Session): V #@ S =
+      def apply(i: Int, rr: ResultRow, s: Session): TupleConverter[V] #@ S =
         var res: V | Null = null
         val a             = res.annotated[S]
-        res.asInstanceOf[V #@ S]
+        res.asInstanceOf[TupleConverter[V] #@ S]
 
-  inline given svtGenericEncoder[S <: SchemaLike: Type, V: Type, PrepareRow: Type, Session]
-      : GenericEncoder[V #@ S, PrepareRow, Session] =
+  inline given svtGenericEncoder[S <: SchemaLike: Type, V <: Tuple: Type, PrepareRow: Type, Session]
+      : GenericEncoder[TupleConverter[V] #@ S, PrepareRow, Session] =
     new:
-      def apply(i: Int, t: V #@ S, row: PrepareRow, session: Session): PrepareRow =
+      def apply(i: Int, t: TupleConverter[V] #@ S, row: PrepareRow, session: Session): PrepareRow =
         scala.compiletime.error("svtGenericEncoder not implemented")

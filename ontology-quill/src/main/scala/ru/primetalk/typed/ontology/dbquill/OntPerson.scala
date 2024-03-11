@@ -8,7 +8,6 @@ import ru.primetalk.typed.ontology.simple.meta.SchemaProvider
 import ru.primetalk.typed.ontology.dbquill.parser.SchemaBasedParser
 import ru.primetalk.typed.ontology.dbquill.parser.MyTestEntity
 import ru.primetalk.typed.ontology.dbquill.parser.ontquery
-import ru.primetalk.typed.ontology.dbquill.parser.query
 import ru.primetalk.typed.ontology.simple.meta.SimpleTypes.{given, *}
 import ru.primetalk.typed.ontology.simple.meta.{#@, annotated, SchemaValueType}
 import java.time.LocalDateTime
@@ -19,14 +18,15 @@ import io.getquill.ast.Renameable
 import scala.quoted.Type
 import io.getquill.generic.GenericDecoder
 import io.getquill.generic.DecodingType
+import ru.primetalk.typed.ontology.dbquill.parser.TupleConverter
 
 object OntPerson {
   given schemaBasedParser: SchemaBasedParser.type = SchemaBasedParser
   val ctx = new PostgresJdbcContext(SnakeCase, "testPostgresDB")
   import ctx._
 
-  // import SchemaBasedParser.svtGenericDecoder
-  // import SchemaBasedParser.svtGenericEncoder
+  import SchemaBasedParser.svtGenericDecoder
+  import SchemaBasedParser.svtGenericEncoder
   
 //  val svtOrder = summon[SchemaValueType[Order.TableSchema, (Int, LocalDateTime)]]
   given svtOrder1: SchemaValueType[Order.TableSchema, Order.svt.Value] = Order.svt
@@ -64,17 +64,17 @@ object OntPerson {
     inline def orderQuery = quote {
       // Order.query(using Order.svt)
       // либо для произвольной схемы: 
-        ontquery[Order.TableSchema, Order.svt.Value, Order.svt.AValue]("order")//(using Order.svt)
+        ontquery[Order.TableSchema, Order.Row, Order.svt.AValue]("order")//(using Order.svt)
     }
-    inline given svtGenericDecoder[ResultRow: Type, Session]
-      : GenericDecoder[ResultRow, Session, Order.svt.Value, DecodingType.Specific] =
-    new:
-      def apply(i: Int, rr: ResultRow, s: Session): Order.svt.Value =
-        var res: Order.svt.Value | Null = null
-        val a             = res.annotated[Order.TableSchema]
-        res.asInstanceOf[Order.svt.Value]
+    // inline given svtGenericDecoder[ResultRow: Type, Session]
+    //   : GenericDecoder[ResultRow, Session, Order.Row, DecodingType.Specific] =
+    // new:
+    //   def apply(i: Int, rr: ResultRow, s: Session): Order.Row =
+    //     var res: Order.svt.Value | Null = null
+    //     val a             = res.annotated[Order.TableSchema]
+    //     res.asInstanceOf[Order.Row]
 
-    // val orders = run(orderQuery)
+    val orders = run(orderQuery)
 
     // println(run(MyTestEntityQuery).string)
     // val make = ContextOperation.Factory[ctx.idiom.type, ctx.naming.type, PrepareRow, ResultRow, Session, ctx.type](ctx.idiom, ctx.naming)
