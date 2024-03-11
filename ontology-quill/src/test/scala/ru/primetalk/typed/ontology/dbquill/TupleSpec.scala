@@ -26,6 +26,7 @@ import io.getquill.quote
 import io.getquill.query
 import io.getquill.context.mirror.MirrorSession
 import io.getquill.*
+import ru.primetalk.typed.ontology.dbquill.parser.TupleConverter
 
 class TupleSpec extends Spec {
 
@@ -63,12 +64,14 @@ class TupleSpec extends Spec {
       val t11: T1 = t2
       t1._2 mustEqual t2._2
     }
-    // "test tuple quat" in {
-
-    //   val q1 = quatOf[(String, Int)]
-    //   val q2 = quatOf[String *: Int *: EmptyTuple]
-    //   q1 mustEqual q2
-    // }
+    "test tuple quat" in {
+      val q1 = quatOf[(String, Int)]
+      type StringInt = String *: Int *: EmptyTuple
+      val q2 = quatOf[StringInt]
+      val q3 = quatOf[TupleConverter[StringInt]]
+      q1 mustEqual q3
+      q1 mustNot be(q2)
+    }
     "test tuple entity" in {
       val IdentT = Ident("t", quatOf[(String, Int)])
       val Tuple2Quat = quatOf[(String, Int)].probit

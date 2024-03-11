@@ -5,6 +5,7 @@ import ru.primetalk.typed.ontology.simple.meta._
 import ru.primetalk.typed.ontology.metameta.OntologyType.Record
 import java.time.LocalDateTime
 import SimpleTypes.{given, *}
+import ru.primetalk.typed.ontology.dbquill.parser.TupleConverter
 
 object Order extends TableBuilder:
   object id   extends column[Int]
@@ -17,4 +18,4 @@ object Order extends TableBuilder:
   val ts = fields(id, date)
   type TS = ts.Type
   val svt = summon[SchemaValueType.Aux1[TableSchema]]
-  type Row = svt.Value
+  type Row = TupleConverter[svt.Value]
