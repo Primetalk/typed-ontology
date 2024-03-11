@@ -39,24 +39,16 @@ class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: Sch
   // override def map[R](f: T => R): EntityQuery[R] = NonQuotedException()
 }
 
-
 object MyTestEntity
 object MyTestEntity2
 
 extension [T <: TableBuilder](t: T)
-  inline def quillQuery(using rsvt: RecordSchemaValueType.Aux1[t.TableSchema]) =
-    ontquery[rsvt.Schema, rsvt.Value, rsvt.AValue](t.tableName)(using recordSchemaValueType)
+  inline def quillQuery[V <: Tuple] = //(using rsvt: RecordSchemaValueType[t.TableSchema, V])
+    ontquery[t.TableSchema, V]("some_table")//t.tableNameI)
 
-transparent inline def ontquery[S <: RecordSchema, T <: Tuple, AV <: T#@S](tableName: String)(using
-    svt: SchemaValueType[S, T]
-) = ${
+transparent inline def ontquery[S <: RecordSchema, T <: Tuple](tableName: String) = ${
   SchemaBasedParserMacros.ontqueryImpl2[S, T]('tableName)
 }
-  // querySchema[T](tableName)
-  //   .map{t => 
-  //     tupleConverter(t)
-  //   }
-  // new OntEntityQuery[S, T, AV](tableName, svt) // NonQuotedException()
 
 class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
     extends Parser(rootParse)
@@ -92,7 +84,11 @@ class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
       // val svtV          = svtFromExpr[s, t].unapply(svt).getOrElse(error(svt))
       // val tpe           = TypeRepr.of[svtV.AValue]
       // val quat          = InferQuat.ofType(tpe).probit
-      val quat          = Quat.Product.apply("unknown", Quat.Product.Type.Abstract, Iterable.empty[(String, Quat)])// InferQuat.ofType(tpe).probit
+      val quat = Quat.Product.apply(
+        "unknown",
+        Quat.Product.Type.Abstract,
+        Iterable.empty[(String, Quat)]
+      ) // InferQuat.ofType(tpe).probit
       val name1: String = FromExpr.StringFromExpr[String].unapply(name).getOrElse(error(name))
       // warnVerifyNoBranches(VerifyNoBranches.in(quat), expr)
       val res = Entity.Opinionated(name1, List(), quat, Renameable.Fixed)
@@ -127,7 +123,7 @@ object SchemaBasedParser extends ParserLibrary:
     ParserChain.attempt(SchemaBasedParser(_)) orElse
       ParserChain.attempt(QueryParser(_))
   // (using svt: SchemaValueType[S, V])
-  
+
   inline given svtGenericDecoder[S <: SchemaLike: Type, V <: Tuple: Type, ResultRow: Type, Session]
       : GenericDecoder[ResultRow, Session, TupleConverter[V] #@ S, DecodingType.Specific] =
     new:

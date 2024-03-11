@@ -65,8 +65,8 @@ object OntPerson {
     inline def orderQuery = quote {
       // Order.query(using Order.svt)
       // либо для произвольной схемы: 
-        // Order.quillQuery
-        ontquery[Order.TableSchema, TupleConverter[Order.svt.Value], Order.svt.AValue]("order")//(using Order.svt)
+        Order.quillQuery[Order.Row]// тип передаём временно, из-за проблемы, что quill не поддерживает сконструированные Tuple'ы *:
+        // ontquery[Order.TableSchema, TupleConverter[Order.svt.Value], Order.svt.AValue]("order")//(using Order.svt)
     }
     // inline given svtGenericDecoder[ResultRow: Type, Session]
     //   : GenericDecoder[ResultRow, Session, Order.Row, DecodingType.Specific] =
