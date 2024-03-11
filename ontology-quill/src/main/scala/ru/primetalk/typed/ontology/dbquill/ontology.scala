@@ -9,8 +9,7 @@ import ru.primetalk.typed.ontology.dbquill.parser.TupleConverter
 
 object Order extends TableBuilder:
   object id   extends column[Int]
-  val id1 = id
-  type Id = id1.type
+  type Id = id.type
   object date extends column[LocalDateTime]
   type Date = date.type
   type TableSchema = Id #: Date #: EmptySchema
