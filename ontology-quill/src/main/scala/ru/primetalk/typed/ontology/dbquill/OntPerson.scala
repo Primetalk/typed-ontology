@@ -8,6 +8,7 @@ import ru.primetalk.typed.ontology.simple.meta.SchemaProvider
 import ru.primetalk.typed.ontology.dbquill.parser.SchemaBasedParser
 import ru.primetalk.typed.ontology.dbquill.parser.MyTestEntity
 import ru.primetalk.typed.ontology.dbquill.parser.ontquery
+import ru.primetalk.typed.ontology.dbquill.parser.quillQuery
 import ru.primetalk.typed.ontology.simple.meta.SimpleTypes.{given, *}
 import ru.primetalk.typed.ontology.simple.meta.{#@, annotated, SchemaValueType}
 import java.time.LocalDateTime
@@ -64,7 +65,8 @@ object OntPerson {
     inline def orderQuery = quote {
       // Order.query(using Order.svt)
       // либо для произвольной схемы: 
-        ontquery[Order.TableSchema, Order.Row, Order.svt.AValue]("order")//(using Order.svt)
+        Order.quillQuery[Order.Row]// тип передаём временно, из-за проблемы, что quill не поддерживает сконструированные Tuple'ы *:
+        // ontquery[Order.TableSchema, TupleConverter[Order.svt.Value], Order.svt.AValue]("order")//(using Order.svt)
     }
     // inline given svtGenericDecoder[ResultRow: Type, Session]
     //   : GenericDecoder[ResultRow, Session, Order.Row, DecodingType.Specific] =

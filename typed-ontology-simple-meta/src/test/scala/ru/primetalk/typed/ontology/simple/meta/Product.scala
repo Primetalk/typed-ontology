@@ -20,6 +20,6 @@ object Product extends TableBuilder:
 
   val fullSchema = infer[TableSchema]
   val priceP = summon[RecordPropertyValueType.Aux1[Price]]
-  val svt = summon[RecordSchemaValueType[TableSchema]]
+  val svt = summon[RecordSchemaValueType.Aux1[TableSchema]]
   type Row = svt.Value
 end Product

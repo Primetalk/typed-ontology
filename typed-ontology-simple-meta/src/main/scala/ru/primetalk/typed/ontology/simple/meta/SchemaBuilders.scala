@@ -6,6 +6,7 @@ import scala.quoted.Type
 import scala.quoted.Quotes
 import scala.quoted.Varargs
 import ru.primetalk.typed.ontology.utils.objectName
+import ru.primetalk.typed.ontology.utils.ObjectNameImpl
 
 trait RecordSchemaBuilderBase:
   type RecordType
@@ -116,4 +117,6 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
   transparent inline def infer[S <: RecordSchema]: S = RecordSchema.constSchema[S]
   val tableSchema: TableSchema
 
-  val tableName = objectName(this)
+  val tableName = objectName
+
+  inline def tableNameI: String = ${ObjectNameImpl.nameOfImpl('this)}

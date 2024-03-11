@@ -15,11 +15,13 @@ import io.getquill.norm.TranspileConfig
 import ru.primetalk.typed.ontology.simple.meta.{
   annotated,
   RecordSchema,
+  RecordSchemaValueType,
   SchemaLike,
   SchemaValueType,
   TableBuilder,
   #@
 }
+import ru.primetalk.typed.ontology.utils.nameOf
 import ru.primetalk.typed.ontology.simple.relalg.Relation
 import io.getquill.generic.GenericDecoder
 import io.getquill.generic.DecodingType
@@ -29,6 +31,7 @@ import io.getquill.querySchema
 //   def apply[S <: SchemaLike, T](tableName: String, svt: SchemaValueType[S, T]) =
 //     new OntEntityQuery[S, T, svt.AValue](tableName, svt)
 // }
+import ru.primetalk.typed.ontology.simple.meta.SimpleTypes.{given, *}
 
 class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: SchemaValueType[S, T])
     extends EntityQuery[T] {
@@ -40,23 +43,13 @@ class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: Sch
 object MyTestEntity
 object MyTestEntity2
 
-// extension [T <: TableBuilder](t: T)
-//   inline def query(using
-//       svt: SchemaValueType.Aux1[t.TableSchema],
+extension [T <: TableBuilder](t: T)
+  inline def quillQuery[V <: Tuple] = //(using rsvt: RecordSchemaValueType[t.TableSchema, V])
+    ontquery[t.TableSchema, V](nameOf(t))//t.tableNameI)
 
-//   )= //: OntEntityQuery[t.TableSchema, svt.Value, svt.AValue] =
-//     ontquery[t.TableSchema, svt.Value, svt.AValue](t.tableName)
-
-transparent inline def ontquery[S <: SchemaLike, T <: Tuple, AV <: T#@S](tableName: String)(using
-    svt: SchemaValueType[S, T]
-) = ${
-  SchemaBasedParserMacros.ontqueryImpl[S, T, AV]('tableName, 'svt)
+transparent inline def ontquery[S <: RecordSchema, T <: Tuple](inline tableName: String) = ${
+  SchemaBasedParserMacros.ontqueryImpl2[S, T]('tableName)
 }
-  // querySchema[T](tableName)
-  //   .map{t => 
-  //     tupleConverter(t)
-  //   }
-  // new OntEntityQuery[S, T, AV](tableName, svt) // NonQuotedException()
 
 class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
     extends Parser(rootParse)
@@ -92,7 +85,11 @@ class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
       // val svtV          = svtFromExpr[s, t].unapply(svt).getOrElse(error(svt))
       // val tpe           = TypeRepr.of[svtV.AValue]
       // val quat          = InferQuat.ofType(tpe).probit
-      val quat          = Quat.Product.apply("unknown", Quat.Product.Type.Abstract, Iterable.empty[(String, Quat)])// InferQuat.ofType(tpe).probit
+      val quat = Quat.Product.apply(
+        "unknown",
+        Quat.Product.Type.Abstract,
+        Iterable.empty[(String, Quat)]
+      ) // InferQuat.ofType(tpe).probit
       val name1: String = FromExpr.StringFromExpr[String].unapply(name).getOrElse(error(name))
       // warnVerifyNoBranches(VerifyNoBranches.in(quat), expr)
       val res = Entity.Opinionated(name1, List(), quat, Renameable.Fixed)
@@ -127,7 +124,7 @@ object SchemaBasedParser extends ParserLibrary:
     ParserChain.attempt(SchemaBasedParser(_)) orElse
       ParserChain.attempt(QueryParser(_))
   // (using svt: SchemaValueType[S, V])
-  
+
   inline given svtGenericDecoder[S <: SchemaLike: Type, V <: Tuple: Type, ResultRow: Type, Session]
       : GenericDecoder[ResultRow, Session, TupleConverter[V] #@ S, DecodingType.Specific] =
     new:

@@ -43,9 +43,13 @@ trait TupleSchemaValueType[S <: TupleSchema]:
   * Scala 3.4.0 wasn't able to disambiguate plain SchemaValueType of two types that have Value <:
   * Tuple.
   */
-trait RecordSchemaValueType[S <: RecordSchema]:
+class RecordSchemaValueType[S <: RecordSchema, V <: Tuple]:
   type Schema = S
-  type Value <: Tuple
+  type Value  = V
+  type AValue = V #@ S
+
+object RecordSchemaValueType:
+  type Aux1[S <: RecordSchema] = RecordSchemaValueType[S, ?]
 
 /** Type class that returns the type of property value.
   */

@@ -6,6 +6,7 @@ package ru.primetalk.typed.ontology.dbquill.parser
   */
 type TupleConverter[T <: Tuple] =
   T match
+    case EmptyTuple => EmptyTuple
     case a *: EmptyTuple => Tuple1[a]
     case a *: b *: EmptyTuple => (a, b)
     case a *: b *: c *: EmptyTuple => (a, b, c)
@@ -16,6 +17,7 @@ type TupleConverter[T <: Tuple] =
 
 inline def tupleConverter[T<:Tuple](t: T): TupleConverter[T] =
   inline t match
+    case _: (EmptyTuple) => EmptyTuple
     case _: (a *: EmptyTuple) => val tt = t.asInstanceOf[a*: EmptyTuple];Tuple1(tt._1)
     case _: (a *: b *: EmptyTuple) => val tt = t.asInstanceOf[a *: b *: EmptyTuple];(tt._1, tt._2)
     case _: (a *: b *: c *: EmptyTuple) => val tt = t.asInstanceOf[a *: b *: c *: EmptyTuple];(tt._1, tt._2, tt._3)
