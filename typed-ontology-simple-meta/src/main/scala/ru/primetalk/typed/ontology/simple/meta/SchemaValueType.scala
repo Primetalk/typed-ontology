@@ -46,6 +46,10 @@ trait TupleSchemaValueType[S <: TupleSchema]:
 trait RecordSchemaValueType[S <: RecordSchema]:
   type Schema = S
   type Value <: Tuple
+  type AValue = Value #@ S
+
+object RecordSchemaValueType:
+  type Aux1[S <: RecordSchema] = RecordSchemaValueType[S]
 
 /** Type class that returns the type of property value.
   */

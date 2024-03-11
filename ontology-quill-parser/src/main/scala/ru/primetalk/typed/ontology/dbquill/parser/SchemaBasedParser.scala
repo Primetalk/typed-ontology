@@ -15,6 +15,7 @@ import io.getquill.norm.TranspileConfig
 import ru.primetalk.typed.ontology.simple.meta.{
   annotated,
   RecordSchema,
+  RecordSchemaValueType,
   SchemaLike,
   SchemaValueType,
   TableBuilder,
@@ -29,6 +30,7 @@ import io.getquill.querySchema
 //   def apply[S <: SchemaLike, T](tableName: String, svt: SchemaValueType[S, T]) =
 //     new OntEntityQuery[S, T, svt.AValue](tableName, svt)
 // }
+import ru.primetalk.typed.ontology.simple.meta.SimpleTypes.{given, *}
 
 class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: SchemaValueType[S, T])
     extends EntityQuery[T] {
@@ -37,20 +39,18 @@ class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: Sch
   // override def map[R](f: T => R): EntityQuery[R] = NonQuotedException()
 }
 
+
 object MyTestEntity
 object MyTestEntity2
 
-// extension [T <: TableBuilder](t: T)
-//   inline def query(using
-//       svt: SchemaValueType.Aux1[t.TableSchema],
+extension [T <: TableBuilder](t: T)
+  inline def quillQuery(using rsvt: RecordSchemaValueType.Aux1[t.TableSchema]) =
+    ontquery[rsvt.Schema, rsvt.Value, rsvt.AValue](t.tableName)(using recordSchemaValueType)
 
-//   )= //: OntEntityQuery[t.TableSchema, svt.Value, svt.AValue] =
-//     ontquery[t.TableSchema, svt.Value, svt.AValue](t.tableName)
-
-transparent inline def ontquery[S <: SchemaLike, T <: Tuple, AV <: T#@S](tableName: String)(using
+transparent inline def ontquery[S <: RecordSchema, T <: Tuple, AV <: T#@S](tableName: String)(using
     svt: SchemaValueType[S, T]
 ) = ${
-  SchemaBasedParserMacros.ontqueryImpl[S, T, AV]('tableName, 'svt)
+  SchemaBasedParserMacros.ontqueryImpl2[S, T]('tableName)
 }
   // querySchema[T](tableName)
   //   .map{t => 
