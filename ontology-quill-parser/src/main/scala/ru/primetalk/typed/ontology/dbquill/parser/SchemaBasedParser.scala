@@ -21,6 +21,7 @@ import ru.primetalk.typed.ontology.simple.meta.{
   TableBuilder,
   #@
 }
+import ru.primetalk.typed.ontology.utils.nameOf
 import ru.primetalk.typed.ontology.simple.relalg.Relation
 import io.getquill.generic.GenericDecoder
 import io.getquill.generic.DecodingType
@@ -44,9 +45,9 @@ object MyTestEntity2
 
 extension [T <: TableBuilder](t: T)
   inline def quillQuery[V <: Tuple] = //(using rsvt: RecordSchemaValueType[t.TableSchema, V])
-    ontquery[t.TableSchema, V]("some_table")//t.tableNameI)
+    ontquery[t.TableSchema, V](nameOf(t))//t.tableNameI)
 
-transparent inline def ontquery[S <: RecordSchema, T <: Tuple](tableName: String) = ${
+transparent inline def ontquery[S <: RecordSchema, T <: Tuple](inline tableName: String) = ${
   SchemaBasedParserMacros.ontqueryImpl2[S, T]('tableName)
 }
 

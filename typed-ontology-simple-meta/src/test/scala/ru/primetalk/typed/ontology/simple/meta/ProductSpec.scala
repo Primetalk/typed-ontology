@@ -21,22 +21,22 @@ class ProductSpec extends BaseSpec:
       summon[SchemaValueType.Aux1[id.Schema]] // (using scalarSchema1svt[Int, id.Schema])
 
     val idRecordSvt1 = tuple1Schema[Int, id.type]
-    val idRecordSvt  = summon[RecordSchemaValueType[IdRecord]] // (using tuple1Schema)
-    val idRecordSvt0: RecordSchemaValueType[IdRecord] = idRecordSvt
+    val idRecordSvt  = summon[RecordSchemaValueType.Aux1[IdRecord]] // (using tuple1Schema)
+    val idRecordSvt0: RecordSchemaValueType.Aux1[IdRecord] = idRecordSvt
     val i: idRecordSvt.Value                          = Tuple1(10)
 
     val ev2 = summon[idRecordSvt.Value =:= Tuple1[Int]]
 
-    val nameSvt = summon[RecordSchemaValueType[name.type #: EmptySchema]] // (using tuple1Schema)
-    val svt2    = summon[RecordSchemaValueType[id.type #: name.type #: EmptySchema]]
+    val nameSvt = summon[RecordSchemaValueType.Aux1[name.type #: EmptySchema]] // (using tuple1Schema)
+    val svt2    = summon[RecordSchemaValueType.Aux1[id.type #: name.type #: EmptySchema]]
 
-    val svt = summon[RecordSchemaValueType[id.type #: name.type #: price.type #: EmptySchema]]
+    val svt = summon[RecordSchemaValueType.Aux1[id.type #: name.type #: price.type #: EmptySchema]]
     val product1: svt.Value = (1, "product1", BigInt(10))
 
     val svt1                 = Product.svt
     val product2: svt1.Value = (2, "product1", BigInt(10))
 
-    val svt3                 = summon[RecordSchemaValueType[Product.TableSchema]]
+    val svt3                 = summon[RecordSchemaValueType.Aux1[Product.TableSchema]]
     val product3: svt3.Value = (1, "product1", BigInt(10))
 
     val product4: Product.Row = (3, "product1", BigInt(10))

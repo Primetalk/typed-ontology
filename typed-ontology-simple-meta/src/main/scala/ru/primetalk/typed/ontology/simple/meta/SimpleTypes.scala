@@ -23,10 +23,10 @@ trait ConversionSimpleTypes:
   ): SchemaValueType[S, tsvt.Value] =
     new SchemaValueType[S, tsvt.Value]
 
-  transparent inline given recordSchemaValueType[S <: RecordSchema](using
-      rsvt: RecordSchemaValueType[S]
-  ): SchemaValueType[S, rsvt.Value] =
-    new SchemaValueType[S, rsvt.Value]
+  transparent inline given recordSchemaValueType[S <: RecordSchema, V<: Tuple](using
+      rsvt: RecordSchemaValueType[S, V]
+  ): SchemaValueType[S, V] =
+    new SchemaValueType[S, V]
 
 /** Provide storage types (tuples) for tuple schemas.
   */
@@ -73,29 +73,24 @@ trait RecordSchemaSimpleTypes:
   transparent inline given emptySchemaSVT: SchemaValueType[EmptySchema.type, EmptyTuple] =
     new SchemaValueType[EmptySchema.type, EmptyTuple]
 
-  transparent inline given emptySchemaRSVT: RecordSchemaValueType[EmptySchema.type] =
-    new:
-      type Schema = EmptySchema.type
-      type Value  = EmptyTuple
+  transparent inline given emptySchemaRSVT: RecordSchemaValueType[EmptySchema.type, EmptyTuple.type] =
+    new RecordSchemaValueType
 
   transparent inline given tuple1Schema[VP, P <: SimplePropertyId[?, VP]](using
       svtp: RecordPropertyValueType[P, VP]
-  ): RecordSchemaValueType[SchemaCons[P, EmptySchema]] =
-    new RecordSchemaValueType[SchemaCons[P, EmptySchema]]:
-      type Value = Tuple1[VP]
+  ): RecordSchemaValueType[SchemaCons[P, EmptySchema], Tuple1[VP]] =
+    new RecordSchemaValueType
 
   transparent inline given nonEmptySchema[
-    VP,
     P <: SimplePropertyId[?, VP],
+    VP,
     S <: NonEmptySchema,
-    // RS <: P #: S
+    VS <: Tuple
   ](using
       svtp: RecordPropertyValueType[P, VP],
-      svts: RecordSchemaValueType[S]
-  ): RecordSchemaValueType[P #: svts.Schema] =
-    new:
-      type Schema = P #: svts.Schema
-      type Value  = VP *: svts.Value
+      svts: RecordSchemaValueType[S, VS]
+  ): RecordSchemaValueType[P #: svts.Schema, VP *: VS] =
+    new RecordSchemaValueType
 
 // Projectors
 trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
@@ -187,16 +182,16 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
       prj(v)
 
 trait TableBuilderSimpleTypes:
-  final case class TableBuilderExtensionR[S <: RecordSchema](
+  final case class TableBuilderExtensionR[S <: RecordSchema, V <: Tuple](
       schema: S,
-      svt: RecordSchemaValueType[S]
+      svt: RecordSchemaValueType[S, V]
   ):
-    type Row = svt.Value
+    type Row = V
 
-  implicit def tableBuilderExtension[T <: TableBuilder](t: T)(using
-      svt1: RecordSchemaValueType[t.TableSchema]
-  ): TableBuilderExtensionR[t.TableSchema] =
-    TableBuilderExtensionR[t.TableSchema](t.tableSchema, svt1)
+  implicit def tableBuilderExtension[T <: TableBuilder, V <: Tuple](t: T)(using
+      svt1: RecordSchemaValueType[t.TableSchema, V]
+  ): TableBuilderExtensionR[t.TableSchema, V] =
+    TableBuilderExtensionR[t.TableSchema, V](t.tableSchema, svt1)
 
 trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
 
