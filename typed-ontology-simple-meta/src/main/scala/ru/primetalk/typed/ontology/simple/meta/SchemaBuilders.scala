@@ -5,6 +5,7 @@ import scala.quoted.Expr
 import scala.quoted.Type
 import scala.quoted.Quotes
 import scala.quoted.Varargs
+import ru.primetalk.typed.ontology.utils.objectName
 
 trait RecordSchemaBuilderBase:
   type RecordType
@@ -33,13 +34,13 @@ def fieldsReverseImpl[S <: RecordSchema](
       seq match
         case Seq() =>
           schemaExpr
-        case Seq('{ $a: at }, as*) => // здесь важно сохранить тип, чтобы
+        case Seq('{type at; $a: `at` }, as*) => // здесь важно сохранить тип, чтобы
           fieldsReverseImpl(Varargs(as), '{ RecordSchema.prepend(${ a }, ${ schemaExpr }) })
 
-def fieldsImpl[S <: RecordSchema](
+def fieldsImpl[S <: RecordSchema: Type](
     propertyList: Expr[Seq[RecordProperty0]],
     schemaExpr: Expr[S]
-)(using Type[S])(using Quotes): Expr[RecordSchema] =
+)(using Quotes): Expr[RecordSchema] =
   propertyList match
     case Varargs(as) =>
       fieldsReverseImpl(Varargs(as.reverse), schemaExpr)
@@ -114,4 +115,5 @@ abstract class TableBuilder extends PropertiesBuilder with ForeignKeyBuilder wit
   type TableSchema <: RecordSchema
   transparent inline def infer[S <: RecordSchema]: S = RecordSchema.constSchema[S]
   val tableSchema: TableSchema
-  type Row = tableSchema.Values
+
+  val tableName = objectName(this)

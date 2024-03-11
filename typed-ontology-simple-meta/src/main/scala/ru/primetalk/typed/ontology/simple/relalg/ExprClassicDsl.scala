@@ -1,12 +1,16 @@
 package ru.primetalk.typed.ontology.simple.relalg
 
+import ru.primetalk.typed.ontology.simple.meta.{Projector, PropertyProjector}
 import ru.primetalk.typed.ontology.simple.meta.RecordSchema
-import ru.primetalk.typed.ontology.simple.meta.RecordProperty0
+import ru.primetalk.typed.ontology.simple.meta.SchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.RecordSchemaValueType
+import ru.primetalk.typed.ontology.simple.meta.SimplePropertyId
 
 trait ExprClassicDsl:
   type Schema <: RecordSchema
   val schema: Schema
-  type Row = schema.Values
+  type Row
+  val svt: SchemaValueType[Schema, Row]
   // DSL. It is part of a single relation to have intrinsic access to schema
 
   sealed trait RelExpr[T]
@@ -15,10 +19,12 @@ trait ExprClassicDsl:
   case class Function2Expr[A, B, C](r1: RelExpr[A], r2: RelExpr[B], name: String, op: (A, B) => C)
       extends RelExpr[C]
 
-  inline def prop[P <: RecordProperty0](p: P): Getter[RecordProperty0.PropertyValueType[p.type]] =
-    Getter(p.name, schema.propertyGetter(p))
+  inline def prop[VP, P <: SimplePropertyId[?, VP]](p: P)(using
+      prj: PropertyProjector[Schema, Row, p.type, VP]
+  ): Getter[VP] =
+    Getter(p.name, r => prj(r))
 
-  inline def const[T](inline t: T): Getter[T] = Getter(s"$t", _ => t)
+  inline def const[T](t: T): Getter[T] = Getter(s"$t", _ => t)
 
   extension [T](r: RelExpr[T])
     inline def ===(inline other: RelExpr[T]): Function2Expr[T, T, Boolean] =

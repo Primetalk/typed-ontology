@@ -1,10 +1,9 @@
 package ru.primetalk.typed.ontology.simple.meta
 
-import org.junit.Test
-
-class PersonSpec:
+class PersonSpec extends BaseSpec:
 
   final case class Person(name: String, age: Int) derives SchemaProvider
 
-  @Test def schemaTest =
+  test("schema derivation test") {
     println(SchemaProvider[Person].schema)
+  }

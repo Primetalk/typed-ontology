@@ -8,7 +8,7 @@ sealed trait RecordProperty0:
   // Record phantom type
   type R
   // Property schema
-  type P <: SchemaLike
+  type Schema <: SchemaLike
 
   val name: String
 
@@ -19,7 +19,7 @@ sealed trait RecordProperty[A] extends RecordProperty0:
 /** Metainformation about property with a known schema. */    
 abstract class SchemaBasedPropertyId[A, S <: SchemaLike](name1: String, val schema: S)
     extends RecordProperty[A]:
-  type P = S
+  type Schema = schema.type
 
   val name: String = name1
 
@@ -32,12 +32,13 @@ abstract class SchemaBasedPropertyId[A, S <: SchemaLike](name1: String, val sche
 /** Metainformation about property. Contains unique name (within the type) and type of the value.
   * Might contain other metainformation about property, like Schema.
   */
-abstract class SimplePropertyId[A, B: ClassTag](name1: String) extends SchemaBasedPropertyId[A, ScalarSchema1[B]](name1, summon[ScalarSchema1[B]])
+abstract class SimplePropertyId[A, B: ClassTag](name1: String)(using schema1: ScalarSchema1[B])
+    extends SchemaBasedPropertyId[A, ScalarSchema1[B]](name1, schema1: ScalarSchema1[B])
 
-object RecordProperty0:
-  type PropertyValueType[A] = A match
-    case SimplePropertyId[_, p] => p
-    case _                      => Nothing
+// object RecordProperty0:
+// type PropertyValueType[A] = A match
+//   case SimplePropertyId[_, p] => p
+//   case _                      => Nothing
 
 trait PropertiesBuilder extends RecordSchemaBuilderBase:
   transparent inline def property[T: ClassTag](inline name: String) =

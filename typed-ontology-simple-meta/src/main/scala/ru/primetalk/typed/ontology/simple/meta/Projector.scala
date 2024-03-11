@@ -1,12 +1,20 @@
 package ru.primetalk.typed.ontology.simple.meta
 
-trait Projector[From <: SchemaLike, To <: SchemaLike]:
-  val from: SchemaValueType.Aux1[From]
-  val to: SchemaValueType.Aux1[To]
-  def apply(v: from.Value): to.Value
+trait PropertyProjector[From <: RecordSchema, VFrom, P <: SimplePropertyId[?, VP], VP]:
+  val from: SchemaValueType[From, VFrom]
+  val rpvt: RecordPropertyValueType[P, VP]
+  type Value = VP
+  def apply(v: VFrom): VP
 
-trait Concatenator[A <: RecordSchema, B <: RecordSchema]:
-  val aSvt: RecordSchemaValueType[A]
-  val bSvt: RecordSchemaValueType[B]
-  val abSvt: RecordSchemaValueType[RecordSchema.Concat[A, B]]
-  def apply(a: aSvt.Value, b: bSvt.Value): abSvt.Value
+trait Projector[From <: SchemaLike, VFrom, To <: SchemaLike, VTo]:
+  val from: SchemaValueType[From, VFrom]
+  val to: SchemaValueType[To, VTo]
+  def apply(v: VFrom): VTo
+
+trait Concatenator[A <: RecordSchema, VA, B <: RecordSchema, VB, VAB]:
+  val aSvt: SchemaValueType[A, VA]
+  val bSvt: SchemaValueType[B, VB]
+  type Schema = RecordSchema.Concat[A, B]
+  def schemaConcat(a: A, b: B): Schema // r1.schema.appendOtherSchema(schema)
+  val abSvt: SchemaValueType[Schema, VAB]
+  def apply(a: VA, b: VB): VAB
