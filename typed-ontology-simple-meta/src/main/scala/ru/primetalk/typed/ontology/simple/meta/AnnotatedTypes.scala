@@ -6,7 +6,7 @@ import scala.runtime.Tuples
 import scala.quoted.Type
 
 /** Provides storage types for ScalarSchema1[T] */
-trait ScalarSimpleTypes:
+trait ScalarAnnotatedTypes:
   /** We might have to explicitly limit the list of supported types to avoid ambiguity. Though,
     * using low priority implicits might help.
     */
@@ -14,23 +14,23 @@ trait ScalarSimpleTypes:
   transparent inline given scalarSchema1svt[
       T <: ScalarTypes,
       S <: ScalarSchema1[T]
-  ]: SchemaValueType[S, T] =
-    new SchemaValueType[S, T]
+  ]: SchemaValueType[S, T #@ S] =
+    new SchemaValueType[S, T #@ S]
 
-trait ConversionSimpleTypes:
+trait ConversionAnnotatedTypes:
   transparent inline given tupleSchemaValueType[S <: TupleSchema](using
       tsvt: TupleSchemaValueType[S]
-  ): SchemaValueType[S, tsvt.Value] =
-    new SchemaValueType[S, tsvt.Value]
+  ): SchemaValueType[S, tsvt.Value #@ S] =
+    new SchemaValueType[S, tsvt.Value #@ S]
 
   transparent inline given recordSchemaValueType[S <: RecordSchema, V<: Tuple](using
       rsvt: RecordSchemaValueType[S, V]
-  ): SchemaValueType[S, V] =
-    new SchemaValueType[S, V]
+  ): SchemaValueType[S, V #@ S] =
+    new SchemaValueType[S, V #@ S]
 
 /** Provide storage types (tuples) for tuple schemas.
   */
-trait TupleSimpleTypes:
+trait TupleAnnotatedTypes:
 
   transparent inline given emptyTupleSchemaSvt: TupleSchemaValueType[EmptyTupleSchema.type] =
     new:
@@ -50,7 +50,7 @@ trait TupleSimpleTypes:
       type Value  = hs.Value *: ts.Value
 
 /** Converts schema value type to RecordPropertyValueType for properties. */
-trait PropertySimpleTypes:
+trait PropertyAnnotatedTypes:
 
   // transparent inline given propertyValueType[B, P <: SimplePropertyId[?, B]](using
   //     vp: ValueOf[P],
@@ -67,13 +67,13 @@ trait PropertySimpleTypes:
   //   new:
   //     type Value = B
 
-trait RecordSchemaSimpleTypes:
+trait RecordSchemaAnnotatedTypes:
   val a = 0
   // SchemaValueTypes
-  transparent inline given emptySchemaSVT: SchemaValueType[EmptySchema.type, EmptyTuple] =
-    new SchemaValueType[EmptySchema.type, EmptyTuple]
+  transparent inline given emptySchemaSVT: SchemaValueType[EmptySchema, EmptyTuple #@ EmptySchema] =
+    new SchemaValueType[EmptySchema.type, EmptyTuple #@ EmptySchema]
 
-  transparent inline given emptySchemaRSVT: RecordSchemaValueType[EmptySchema.type, EmptyTuple.type] =
+  transparent inline given emptySchemaRSVT: RecordSchemaValueType[EmptySchema, EmptyTuple.type] =
     new RecordSchemaValueType
 
   transparent inline given tuple1Schema[VP, P <: SimplePropertyId[?, VP]](using
@@ -93,8 +93,24 @@ trait RecordSchemaSimpleTypes:
     new RecordSchemaValueType
 
 // Projectors
-trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
+trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
 
+  transparent inline given propertyProjectorForAnnotatedValue[
+    P <: SimplePropertyId[?, VP],
+    VP,
+    From <: RecordSchema,
+    VFrom <: Tuple,
+  ](using 
+    pp: PropertyProjector[From, VFrom, P, VP],
+    svt: SchemaValueType[From, VFrom #@ From]
+    ): PropertyProjector[From, VFrom #@ From, P, VP] =
+    new:
+      val from: SchemaValueType[From, VFrom #@ From]       = svt
+      val rpvt: RecordPropertyValueType[P, VP] = pp.rpvt
+      type Value = VP
+      def apply(v: VFrom #@ From): VP =
+        pp.apply(v)
+      
   // Projectors for properties
   transparent inline given propertyProjectorHead[
     VP,
@@ -104,15 +120,15 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
     VFrom <: Tuple,
   ](using
       rpvt: RecordPropertyValueType[P, VP],
-      svtp: SchemaValueType[rpvt.Schema, VP],
-      svtps: SchemaValueType[From, VFrom]
-  ): PropertyProjector[From, VFrom, P, VP] =
+      svtp: SchemaValueType[rpvt.Schema, VP #@ rpvt.Schema],
+      svtps: SchemaValueType[From, VFrom #@ From]
+  ): PropertyProjector[From, VFrom #@ From, P, VP] =
 
     new:
-      val from: SchemaValueType[From, VFrom]       = svtps
+      val from: SchemaValueType[From, VFrom #@ From]   = svtps
       val rpvt: RecordPropertyValueType[P, VP] = rpvt
       type Value = VP
-      def apply(v: VFrom): VP =
+      def apply(v: VFrom #@ From): VP =
         v match
           case h *: _ =>
             h.asInstanceOf[VP]
@@ -129,29 +145,29 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
       // From <: P2 #: S,
   ](using
     rpvt1: RecordPropertyValueType[P, VP],
-    propertyProjector: PropertyProjector[S, VS, P, VP],
-    svtps: SchemaValueType[P2 #: S, VP2 *: VS]
-  ): PropertyProjector[P2 #: S, VP2 *: VS, P, VP] =
+    propertyProjector: PropertyProjector[S, VS #@ S, P, VP],
+    svtps: SchemaValueType[P2 #: S, (VP2 *: VS) #@ (P2 #: S)]
+  ): PropertyProjector[P2 #: S, (VP2 *: VS) #@ (P2 #: S), P, VP] =
     new:
-      val from: SchemaValueType[P2 #: S, VP2 *: VS] = svtps
+      val from: SchemaValueType[P2 #: S, (VP2 *: VS) #@ (P2 #: S)] = svtps
       val rpvt: RecordPropertyValueType[P, VP] = rpvt1
       type Value = VP
       
-      def apply(v: VP2 *: VS): VP =
+      def apply(v: (VP2 *: VS) #@ (P2 #: S)): VP =
         v match
           case _ *: (t: VS) =>
-            propertyProjector(t)
+            propertyProjector(t.annotated[S])
 
   // Projectors for various schemas
   transparent inline given emptySchemaProjector[From <: RecordSchema, VFrom](using
-      svt: SchemaValueType[From, VFrom]
-  ): Projector[From, VFrom, EmptySchema, EmptyTuple] =
+      svt: SchemaValueType[From, VFrom #@ From]
+  ): Projector[From, VFrom #@ From, EmptySchema, EmptyTuple #@ EmptySchema] =
     new:
-      val from: SchemaValueType[From, VFrom] = svt
-      val to: SchemaValueType[EmptySchema.type, EmptyTuple] =
+      val from: SchemaValueType[From, VFrom #@ From] = svt
+      val to: SchemaValueType[EmptySchema, EmptyTuple #@ EmptySchema] =
         emptySchemaSVT
-      def apply(v: VFrom): EmptyTuple =
-        EmptyTuple
+      def apply(v: VFrom #@ From): EmptyTuple #@ EmptySchema =
+        EmptyTuple.annotated[EmptySchema]
 
   transparent inline given someSchemaPlusPropertyProjector[
       From <: RecordSchema,
@@ -182,14 +198,16 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
       prj(v)
 
   extension [S <: RecordSchema](s: S)
-    def apply[V](v: V)(using svtv: SchemaValueType[S, V]): V #@ S =
+    def apply[V](v: V)(using svtv: SchemaValueType[S, V #@ S]): V #@ S =
       v.annotated[S]
 
   extension [S <: RecordSchema, V](av: V #@ S)
-    def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V, P, VP]) = 
+    def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
+      pp.apply(av)
+    def /[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
       pp.apply(av)
 
-trait TableBuilderSimpleTypes:
+trait TableBuilderAnnotatedTypes:
   final case class TableBuilderExtensionR[S <: RecordSchema, V <: Tuple](
       schema: S,
       svt: RecordSchemaValueType[S, V]
@@ -201,21 +219,21 @@ trait TableBuilderSimpleTypes:
   ): TableBuilderExtensionR[t.TableSchema, V] =
     TableBuilderExtensionR[t.TableSchema, V](t.tableSchema, svt1)
 
-trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
+trait ConcatenatorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
 
   transparent inline given emptyBConcatenator[B <: RecordSchema, VB](using
-      SchemaValueType[B, VB]
-  ): Concatenator[EmptySchema, EmptyTuple, B, VB, VB] =
+      SchemaValueType[B, VB #@ B]
+  ): Concatenator[EmptySchema, EmptyTuple #@ EmptySchema, B, VB #@ B, VB #@ B] =
     new:
-      val aSvt = summon[SchemaValueType[EmptySchema, EmptyTuple]]
-      val bSvt = summon[SchemaValueType[B, VB]]
+      val aSvt = summon[SchemaValueType[EmptySchema, EmptyTuple #@ EmptySchema]]
+      val bSvt = summon[SchemaValueType[B, VB #@ B]]
 
       type Schema = B
 
       def schemaConcat(a: EmptySchema, b: B): Schema = b
-      val abSvt: SchemaValueType[B, VB]              = bSvt
+      val abSvt: SchemaValueType[B, VB #@ B]              = bSvt
 
-      def apply(a: EmptyTuple, b: VB): VB =
+      def apply(a: EmptyTuple #@ EmptySchema, b: VB #@ B): VB #@ B =
         b
 
   transparent inline given nonEmptyConcatenator[
@@ -230,12 +248,12 @@ trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
 
       VSB <: Tuple
   ](using
-      svtS: SchemaValueType[S, VS],
-      svtA: SchemaValueType[P #: S, VP *: VS],
-      svtB: SchemaValueType[B, VB],
-      concatSB: Concatenator[S, VS, B, VB, VSB],
-      svt: SchemaValueType[P #: concatSB.Schema, VP *: VSB]
-  ): Concatenator[P #: S, VP *: VS, B, VB, VP *: VSB] =
+      svtS: SchemaValueType[S, VS #@ S],
+      svtA: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)],
+      svtB: SchemaValueType[B, VB #@ B],
+      concatSB: Concatenator[S, VS #@ S, B, VB #@ B, VSB #@ (RecordSchema.Concat[S, B])],
+      svt: SchemaValueType[P #: concatSB.Schema, (VP *: VSB) #@ (P #: concatSB.Schema)]
+  ): Concatenator[P #: S, (VP *: VS) #@ (P #: S), B, VB #@ B, (VP *: VSB) #@ (P #: concatSB.Schema)] =
     new:
       val aSvt = svtA
       val bSvt = svtB
@@ -245,17 +263,17 @@ trait ConcatenatorSimpleTypes extends RecordSchemaSimpleTypes:
       def schemaConcat(a: P #: S, b: B): Schema =
         a.appendOtherSchema(b)
 
-      val abSvt: SchemaValueType[Schema, VP *: VSB] = svt
+      val abSvt: SchemaValueType[Schema, (VP *: VSB) #@ Schema] = svt
 
-      def apply(a: VP *: VS, b: VB): VP *: VSB =
+      def apply(a: (VP *: VS) #@ (P #: S), b: VB #@ B): (VP *: VSB) #@ Schema =
         Tuples.concat(a, b).asInstanceOf[abSvt.Value]
 
-object SimpleTypes
-    extends ScalarSimpleTypes
-    with ConversionSimpleTypes
-    // with TupleSimpleTypes
-    with PropertySimpleTypes
-    with RecordSchemaSimpleTypes
-    with ProjectorSimpleTypes
-    with ConcatenatorSimpleTypes
-//with TableBuilderSimpleTypes
+object AnnotatedTypesContext
+    extends ScalarAnnotatedTypes
+    with ConversionAnnotatedTypes
+    // with TupleAnnotatedTypes
+    with PropertyAnnotatedTypes
+    with RecordSchemaAnnotatedTypes
+    with ProjectorAnnotatedTypes
+    with ConcatenatorAnnotatedTypes
+//with TableBuilderAnnotatedTypes

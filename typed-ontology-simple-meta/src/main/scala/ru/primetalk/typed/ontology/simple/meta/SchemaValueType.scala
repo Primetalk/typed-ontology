@@ -17,7 +17,6 @@ extension [A](a: A)
 class SchemaValueType[S <: SchemaLike, V]:
   type Schema = S
   type Value  = V
-  type AValue = V #@ S
 
 object SchemaValueType:
   def apply[S <: SchemaLike](using svt: SchemaValueType[S, ?]): svt.type =

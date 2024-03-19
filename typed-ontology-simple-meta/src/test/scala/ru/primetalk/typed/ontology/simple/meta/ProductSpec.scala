@@ -41,3 +41,12 @@ class ProductSpec extends BaseSpec:
 
     val product4: Product.Row = (3, "product1", BigInt(10))
   }
+
+  test("property dsl"){
+    import Product.{given, *}
+    import AnnotatedTypesContext.{given, *}
+    val product1 = Product.tableSchema((1, "product1", BigInt(10)))
+    assert(product1.->>(Product.id) == 1)
+    assert(product1 ->> Product.name == "product1")
+    assert(product1 / Product.price == BigInt(10))
+  }

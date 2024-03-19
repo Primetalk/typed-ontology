@@ -1,4 +1,4 @@
-val scala3Version = "3.4.1-RC1"
+val scala3Version = "3.4.1-RC2"
 val mainVersion   = "0.2.5"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
