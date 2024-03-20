@@ -11,7 +11,7 @@ case class OldPerson(firstName: String, lastName: String, age: Int) derives Sche
 
 object OldPersonApp {
 
-  val provider = SchemaProvider[OldPerson]
+  val provider     = SchemaProvider[OldPerson]
   val personSchema = provider.schema
   println(personSchema)
 

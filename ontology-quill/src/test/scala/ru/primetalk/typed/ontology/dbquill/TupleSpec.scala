@@ -35,18 +35,23 @@ import java.time.LocalDate
 
 class TupleSpec extends Spec {
 
-  val ctx = new MirrorContext[MirrorSqlDialect, Literal](MirrorSqlDialect, Literal) with MirrorColumnResolving[MirrorSqlDialect, Literal]
+  val ctx = new MirrorContext[MirrorSqlDialect, Literal](MirrorSqlDialect, Literal)
+    with MirrorColumnResolving[MirrorSqlDialect, Literal]
   import ctx.{given, _}
 
   "simple examples" - {
     val s = MirrorSession.default
 
     "test tuple type" in {
-      val IdentP = Ident("p", quatOf[OldPerson])
+      val IdentP        = Ident("p", quatOf[OldPerson])
       val OldPersonQuat = quatOf[OldPerson].probit
 
       inline def q = quote { query[OldPerson].map(p => (p.firstName, p.age)) }
-      q.ast mustEqual Map(Entity("OldPerson", List(), `OldPersonQuat`), IdentP, ast.Tuple(List(Property(IdentP, "firstName"),Property(IdentP, "age"))))
+      q.ast mustEqual Map(
+        Entity("OldPerson", List(), `OldPersonQuat`),
+        IdentP,
+        ast.Tuple(List(Property(IdentP, "firstName"), Property(IdentP, "age")))
+      )
       val result = ctx.run(q)
 
       val tupleRow = Row("_1" -> "Joe", "_2" -> 123)
@@ -55,7 +60,7 @@ class TupleSpec extends Spec {
 
     "test case class type" in {
       inline def q = quote { query[OldPerson] }
-      val result = ctx.run(q)
+      val result   = ctx.run(q)
 
       val tupleRow = Row("firstName" -> "Joe", "lastName" -> "Dow", "age" -> 123)
       result.extractor(tupleRow, s) mustEqual OldPerson("Joe", "Dow", 123)
@@ -64,8 +69,8 @@ class TupleSpec extends Spec {
       type T1 = (String, Int)
       type T2 = String *: Int *: EmptyTuple
       summon[T1 =:= T2]
-      val t1: T1 = ("", 0)
-      val t2: T2 = t1
+      val t1: T1  = ("", 0)
+      val t2: T2  = t1
       val t11: T1 = t2
       t1._2 mustEqual t2._2
     }
@@ -78,11 +83,15 @@ class TupleSpec extends Spec {
       q1 mustNot be(q2)
     }
     "test tuple entity" in {
-      val IdentT = Ident("t", quatOf[(String, Int)])
+      val IdentT     = Ident("t", quatOf[(String, Int)])
       val Tuple2Quat = quatOf[(String, Int)].probit
       type PersonT = (String, Int)
       inline def q = quote { query[PersonT].map(t => (t._1, t._2)) }
-      q.ast mustEqual Map(Entity("Tuple2", List(), `Tuple2Quat`), IdentT, ast.Tuple(List(Property(IdentT, "_1"),Property(IdentT, "_2"))))
+      q.ast mustEqual Map(
+        Entity("Tuple2", List(), `Tuple2Quat`),
+        IdentT,
+        ast.Tuple(List(Property(IdentT, "_1"), Property(IdentT, "_2")))
+      )
       val result = ctx.run(q)
 
       val tupleRow = Row("_1" -> "Joe", "_2" -> 123)
@@ -91,24 +100,33 @@ class TupleSpec extends Spec {
     "test annotated values" in {
       import ru.primetalk.typed.ontology.simple.meta.AnnotatedTypesContext.{given, *}
       inline def q = ontQuote(Order1)
-      val time1 = LocalDate.now()
-      given dec: GenericDecoder[ResultRow, Session, Order1.ARow, io.getquill.generic.DecodingType.Specific] =
+      val time1    = LocalDate.now()
+      given dec: GenericDecoder[
+        ResultRow,
+        Session,
+        Order1.ARow,
+        io.getquill.generic.DecodingType.Specific
+      ] =
         new:
-          def apply(i: Int, rr: ResultRow, s: Session): Order1.ARow = 
+          def apply(i: Int, rr: ResultRow, s: Session): Order1.ARow =
             (rr.apply[Int]("id"), rr.apply[LocalDate]("date")).#@[Order1.TableSchema]
-      val IdentT = Ident("t", quatOf[(String, Int)])
+      val IdentT     = Ident("t", quatOf[(String, Int)])
       val Tuple2Quat = quatOf[(String, Int)].probit
-      q.ast mustEqual Entity("order1", List(
+      q.ast mustEqual Entity(
+        "order1",
+        List(
           PropertyAlias(List("_1"), "id"),
-          PropertyAlias(List("_2"), "date"),
-        ), `Tuple2Quat`)
+          PropertyAlias(List("_2"), "date")
+        ),
+        `Tuple2Quat`
+      )
 
-      val s = MirrorSession.default
+      val s      = MirrorSession.default
       val result = ctx.run(q)
 
       val order1Row = Row("type" -> "order1", "id" -> 18, "date" -> time1)
-      val order1 = Order1.row(18, time1)
-      result.extractor(order1Row, s) mustEqual order1      
+      val order1    = Order1.row(18, time1)
+      result.extractor(order1Row, s) mustEqual order1
     }
   }
 }

@@ -1,6 +1,5 @@
 package ru.primetalk.typed.ontology.dbquill
 
-
 import io.getquill.*
 import io.getquill.context.ContextOperation
 import ru.primetalk.typed.ontology.simple.meta.SchemaProvider
@@ -25,8 +24,8 @@ import io.getquill.util.LoadConfig
 
 object OntPerson {
   given schemaBasedParser: SchemaBasedParser.type = SchemaBasedParser
-  val ds = JdbcContextConfig(LoadConfig("testPostgresDB")).dataSource
-  val ctx = new MyPostgresJdbcContext(ds)
+  val ds  = JdbcContextConfig(LoadConfig("testPostgresDB")).dataSource
+  val ctx = new OntolodyPostgresJdbcContext(ds)
   import ctx.{given, *}
 
   def main(args: Array[String]): Unit = {
