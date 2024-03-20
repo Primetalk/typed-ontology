@@ -40,9 +40,24 @@ class MyPostgresJdbcContext(dataSource: DataSource)
         val vs = sdec(i+1, rr, s)
         (v *: vs).#@[P #: S]
 
-  given dummyAnnotatedEncoder[V <: Tuple, S <: SchemaLike]: GenericEncoder[V #@ S, PrepareRow, Session] =
+  given annotetedEmptyEncoder: GenericEncoder[EmptyTuple #@ EmptySchema, PrepareRow, Session] =
     new:
-      def apply(i: Int, t: V #@ S, row: PrepareRow, session: Session): PrepareRow =
+      def apply(i: Int, t: EmptyTuple #@ EmptySchema, row: PrepareRow, session: Session): PrepareRow =
         row
+
+  given annotatedPropEncoder[
+    P <: SimplePropertyId[?, V], V, 
+    S <: RecordSchema, VS <: Tuple
+  ](
+    using 
+    venc: GenericEncoder[V, PrepareRow, Session],
+    senc: GenericEncoder[VS #@ S, PrepareRow, Session]
+  ): GenericEncoder[(V *: VS) #@ (P #: S), PrepareRow, Session] =
+    new:
+      def apply(i: Int, vvs: (V *: VS) #@ (P #: S), row: PrepareRow, session: Session): PrepareRow =
+        vvs match
+          case h *: t =>
+            val row2 = venc(i, h, row, session)
+            senc(i+1, t.#@[S], row2, session)
 
 }
