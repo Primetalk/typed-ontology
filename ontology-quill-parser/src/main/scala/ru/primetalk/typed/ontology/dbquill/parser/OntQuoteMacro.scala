@@ -17,7 +17,6 @@ import io.getquill.parser.engine.Parser
 import io.getquill.quotation.NonQuotedException
 import io.getquill.norm.TranspileConfig
 import ru.primetalk.typed.ontology.simple.meta.{
-  annotated,
   RecordSchema,
   RecordSchemaValueType,
   SchemaLike,
@@ -48,7 +47,7 @@ object OntQuoteMacro {
       svt: Expr[SchemaValueType[S, V #@ S]]
   )(using Quotes): Expr[Quoted[EntityQuery[V #@ S]]] =
     import quotes.reflect.*
-    val quat = Quat.Product.apply("my_product", Iterable.empty)
+    val quat = Quat.Product.apply("my_product_quat", Iterable.empty)
     val propertyAliases1 = Expr.ofList(propertyAliases[S, V #@ S]())
     // val e = Entity.Opinionated("order1", propertyAliases, quat, Renameable.Fixed)
     // import io.getquill.parser.Lifter.default.liftEntity

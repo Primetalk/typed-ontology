@@ -78,7 +78,7 @@ trait RecordSchemaSimpleTypes:
 
   transparent inline given tuple1Schema[VP, P <: SimplePropertyId[?, VP]](using
       svtp: RecordPropertyValueType[P, VP]
-  ): RecordSchemaValueType[SchemaCons[P, EmptySchema], Tuple1[VP]] =
+  ): RecordSchemaValueType[SchemaCons[P, EmptySchema], VP *: EmptyTuple] =
     new RecordSchemaValueType
 
   transparent inline given nonEmptySchema[
@@ -183,7 +183,7 @@ trait ProjectorSimpleTypes extends RecordSchemaSimpleTypes:
 
   extension [S <: RecordSchema](s: S)
     def apply[V](v: V)(using svtv: SchemaValueType[S, V]): V #@ S =
-      v.annotated[S]
+      v.#@[S]
 
   extension [S <: RecordSchema, V](av: V #@ S)
     def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V, P, VP]) = 

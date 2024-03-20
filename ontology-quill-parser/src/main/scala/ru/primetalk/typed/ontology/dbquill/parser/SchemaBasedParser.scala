@@ -13,7 +13,6 @@ import io.getquill.parser.engine.Parser
 import io.getquill.quotation.NonQuotedException
 import io.getquill.norm.TranspileConfig
 import ru.primetalk.typed.ontology.simple.meta.{
-  annotated,
   RecordSchema,
   RecordSchemaValueType,
   SchemaLike,
@@ -32,6 +31,7 @@ import io.getquill.querySchema
 //     new OntEntityQuery[S, T, svt.AValue](tableName, svt)
 // }
 import ru.primetalk.typed.ontology.simple.meta.SimpleTypes.{given, *}
+import io.getquill.Quoted
 
 class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: SchemaValueType[S, T])
     extends EntityQuery[T] {
@@ -44,8 +44,10 @@ object MyTestEntity
 object MyTestEntity2
 
 extension [T <: TableBuilder](t: T)
-  inline def quillQuery[V <: Tuple] = //(using rsvt: RecordSchemaValueType[t.TableSchema, V])
-    ontquery[t.TableSchema, V](nameOf(t))//t.tableNameI)
+  transparent inline def quillQuery[
+      V <: Tuple
+  ] = // (using rsvt: RecordSchemaValueType[t.TableSchema, V])
+    ontquery[t.TableSchema, V](nameOf(t)) // t.tableNameI)
 
 transparent inline def ontquery[S <: RecordSchema, T <: Tuple](inline tableName: String) = ${
   SchemaBasedParserMacros.ontqueryImpl2[S, T]('tableName)
@@ -130,7 +132,7 @@ object SchemaBasedParser extends ParserLibrary:
     new:
       def apply(i: Int, rr: ResultRow, s: Session): TupleConverter[V] #@ S =
         var res: V | Null = null
-        val a             = res.annotated[S]
+        val a             = res.#@[S]
         res.asInstanceOf[TupleConverter[V] #@ S]
 
   inline given svtGenericEncoder[S <: SchemaLike: Type, V <: Tuple: Type, PrepareRow: Type, Session]

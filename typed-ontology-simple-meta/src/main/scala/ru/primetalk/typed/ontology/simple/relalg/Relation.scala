@@ -114,24 +114,24 @@ abstract class Relation[S <: RecordSchema, VS, V[_]](val schema: S)(using Schema
 
   transparent inline def prependCalcColumn[T, P <: SimplePropertyId[?, T], VRes](p: P)(
     using 
-    sv: SchemaValueType[p.type #: EmptySchema, Tuple1[T]], 
+    sv: SchemaValueType[p.type #: EmptySchema, T *: EmptyTuple], 
     fm: FlatMap[V],
-    concat: Concatenator[p.type #: EmptySchema, Tuple1[T], Schema, VS, VRes],
+    concat: Concatenator[p.type #: EmptySchema, T *: EmptyTuple, Schema, VS, VRes],
 )(f: VS => T) =
     val pSchema: p.type #: EmptySchema = p #: EmptySchema
     
     val schema3 = concat.schemaConcat(pSchema, schema)
     val vals    = rows.map{row => 
-      val pv: sv.Value = Tuple1(f(row)) 
+      val pv: sv.Value = f(row) *: EmptyTuple
       (concat(pv, row))
     }
     Relation[concat.Schema, concat.abSvt.Value, V](schema3)(using concat.abSvt)(vals)
 
   transparent inline def prependCalcColumnF[T, P <: SimplePropertyId[?, T], VRes](p: P)(inline f: RelExpr[T])(
     using 
-    sv: SchemaValueType[p.type #: EmptySchema, Tuple1[T]], 
+    sv: SchemaValueType[p.type #: EmptySchema, T *: EmptyTuple], 
     fm: FlatMap[V],
-    concat: Concatenator[p.type #: EmptySchema, Tuple1[T], Schema, VS, VRes]
+    concat: Concatenator[p.type #: EmptySchema, T *: EmptyTuple, Schema, VS, VRes]
   ) =
     val fun = rowFun(f)
     prependCalcColumn(p)(fun)

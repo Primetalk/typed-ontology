@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS person (
     age integer NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS order (
+CREATE TABLE IF NOT EXISTS order1 (
     id integer NOT NULL,
     "date" date NOT NULL
 );
 
-INSERT INTO order
+INSERT INTO order1
 VALUES (1, '2024-03-11'::date);

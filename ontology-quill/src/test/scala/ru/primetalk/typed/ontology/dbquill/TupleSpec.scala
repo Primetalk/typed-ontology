@@ -31,6 +31,7 @@ import ru.primetalk.typed.ontology.dbquill.parser.quillQuery
 import ru.primetalk.typed.ontology.dbquill.parser.ontQuote
 import ru.primetalk.typed.ontology.simple.meta.annotated
 import java.time.LocalDateTime
+import java.time.LocalDate
 
 class TupleSpec extends Spec {
 
@@ -89,12 +90,12 @@ class TupleSpec extends Spec {
     }
     "test annotated values" in {
       import ru.primetalk.typed.ontology.simple.meta.AnnotatedTypesContext.{given, *}
-      inline def q = ontQuote(Order)
-      val time1 = LocalDateTime.now()
-      given dec: GenericDecoder[ResultRow, Session, Order.ARow, io.getquill.generic.DecodingType.Specific] =
+      inline def q = ontQuote(Order1)
+      val time1 = LocalDate.now()
+      given dec: GenericDecoder[ResultRow, Session, Order1.ARow, io.getquill.generic.DecodingType.Specific] =
         new:
-          def apply(i: Int, rr: ResultRow, s: Session): Order.ARow = 
-            (rr.apply[Int]("id"), rr.apply[LocalDateTime]("date")).annotated[Order.TableSchema]
+          def apply(i: Int, rr: ResultRow, s: Session): Order1.ARow = 
+            (rr.apply[Int]("id"), rr.apply[LocalDate]("date")).annotated[Order1.TableSchema]
       val IdentT = Ident("t", quatOf[(String, Int)])
       val Tuple2Quat = quatOf[(String, Int)].probit
       q.ast mustEqual Entity("order1", List(
@@ -106,7 +107,7 @@ class TupleSpec extends Spec {
       val result = ctx.run(q)
 
       val order1Row = Row("type" -> "order1", "id" -> 18, "date" -> time1)
-      val order1 = Order.row(18, time1)
+      val order1 = Order1.row(18, time1)
       result.extractor(order1Row, s) mustEqual order1      
     }
   }

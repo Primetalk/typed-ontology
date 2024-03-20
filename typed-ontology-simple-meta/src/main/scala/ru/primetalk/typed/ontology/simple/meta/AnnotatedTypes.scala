@@ -4,13 +4,15 @@ import scala.annotation.targetName
 import java.time.LocalDateTime
 import scala.runtime.Tuples
 import scala.quoted.Type
+import java.time.LocalDate
+import java.time.LocalTime
 
 /** Provides storage types for ScalarSchema1[T] */
 trait ScalarAnnotatedTypes:
   /** We might have to explicitly limit the list of supported types to avoid ambiguity. Though,
     * using low priority implicits might help.
     */
-  type ScalarTypes = AnyVal | String | BigInt | LocalDateTime // Int | String | Boolean | Double
+  type ScalarTypes = AnyVal | String | BigInt | LocalDateTime | LocalDate | LocalTime // Int | String | Boolean | Double
   transparent inline given scalarSchema1svt[
       T <: ScalarTypes,
       S <: ScalarSchema1[T]
@@ -78,7 +80,7 @@ trait RecordSchemaAnnotatedTypes:
 
   transparent inline given tuple1Schema[VP, P <: SimplePropertyId[?, VP]](using
       svtp: RecordPropertyValueType[P, VP]
-  ): RecordSchemaValueType[SchemaCons[P, EmptySchema], Tuple1[VP]] =
+  ): RecordSchemaValueType[SchemaCons[P, EmptySchema], VP *: EmptyTuple] =
     new RecordSchemaValueType
 
   transparent inline given nonEmptySchema[
@@ -156,7 +158,7 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
       def apply(v: (VP2 *: VS) #@ (P2 #: S)): VP =
         v match
           case _ *: (t: VS) =>
-            propertyProjector(t.annotated[S])
+            propertyProjector(t.#@[S])
 
   // Projectors for various schemas
   transparent inline given emptySchemaProjector[From <: RecordSchema, VFrom](using
@@ -167,7 +169,7 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
       val to: SchemaValueType[EmptySchema, EmptyTuple #@ EmptySchema] =
         emptySchemaSVT
       def apply(v: VFrom #@ From): EmptyTuple #@ EmptySchema =
-        EmptyTuple.annotated[EmptySchema]
+        EmptyTuple.#@[EmptySchema]
 
   transparent inline given someSchemaPlusPropertyProjector[
       From <: RecordSchema,
@@ -199,11 +201,11 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
 
   extension [S <: RecordSchema](s: S)
     def apply[V](v: V)(using svtv: SchemaValueType[S, V #@ S]): V #@ S =
-      v.annotated[S]
+      v.#@[S]
 
   extension [TB <: TableBuilder](t: TB)
     def row[V](v: V)(using svtv: SchemaValueType[t.TableSchema, V #@ t.TableSchema]): V #@ t.TableSchema =
-      v.annotated[t.TableSchema]
+      v.#@[t.TableSchema]
 
   extension [S <: RecordSchema, V](av: V #@ S)
     def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
