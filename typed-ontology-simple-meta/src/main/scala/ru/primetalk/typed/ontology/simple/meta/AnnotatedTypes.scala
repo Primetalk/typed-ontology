@@ -201,6 +201,10 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
     def apply[V](v: V)(using svtv: SchemaValueType[S, V #@ S]): V #@ S =
       v.annotated[S]
 
+  extension [TB <: TableBuilder](t: TB)
+    def row[V](v: V)(using svtv: SchemaValueType[t.TableSchema, V #@ t.TableSchema]): V #@ t.TableSchema =
+      v.annotated[t.TableSchema]
+
   extension [S <: RecordSchema, V](av: V #@ S)
     def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
       pp.apply(av)

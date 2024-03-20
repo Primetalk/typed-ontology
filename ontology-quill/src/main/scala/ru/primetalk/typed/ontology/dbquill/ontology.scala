@@ -18,3 +18,4 @@ object Order extends TableBuilder:
   type TS = ts.Type
   val svt = summon[SchemaValueType.Aux1[TableSchema]]
   type Row = TupleConverter[svt.Value]
+  type ARow = svt.Value #@ TableSchema
