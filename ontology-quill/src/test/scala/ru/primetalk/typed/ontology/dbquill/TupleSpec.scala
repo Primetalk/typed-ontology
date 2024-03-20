@@ -29,7 +29,7 @@ import io.getquill.*
 import ru.primetalk.typed.ontology.dbquill.parser.TupleConverter
 import ru.primetalk.typed.ontology.dbquill.parser.quillQuery
 import ru.primetalk.typed.ontology.dbquill.parser.ontQuote
-import ru.primetalk.typed.ontology.simple.meta.annotated
+import ru.primetalk.typed.ontology.simple.meta.#@
 import java.time.LocalDateTime
 import java.time.LocalDate
 
@@ -95,7 +95,7 @@ class TupleSpec extends Spec {
       given dec: GenericDecoder[ResultRow, Session, Order1.ARow, io.getquill.generic.DecodingType.Specific] =
         new:
           def apply(i: Int, rr: ResultRow, s: Session): Order1.ARow = 
-            (rr.apply[Int]("id"), rr.apply[LocalDate]("date")).annotated[Order1.TableSchema]
+            (rr.apply[Int]("id"), rr.apply[LocalDate]("date")).#@[Order1.TableSchema]
       val IdentT = Ident("t", quatOf[(String, Int)])
       val Tuple2Quat = quatOf[(String, Int)].probit
       q.ast mustEqual Entity("order1", List(
