@@ -180,15 +180,15 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
       VS <: Tuple,
   ](using
       rpvt: RecordPropertyValueType[P, VP],
-      existingSchemaProjector: Projector[From, VFrom, S, VS],
+      existingSchemaProjector: Projector[From, VFrom#@From, S, VS #@ S],
       propertyProjector: PropertyProjector[From, VFrom, P, VP],
-      svtps: SchemaValueType[P #: S, VP *: VS]
-  ): Projector[From, VFrom, P #: S, VP *: VS] =
+      svtps: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)]
+  ): Projector[From, VFrom #@From, P #: S, (VP *: VS) #@ (P #: S)] =
     new:
-      val from: SchemaValueType[From, VFrom] = existingSchemaProjector.from
-      val to: SchemaValueType[P #: S, VP *: VS]  = svtps
-      def apply(v: VFrom): VP *: VS =
-        (propertyProjector(v) *: existingSchemaProjector(v))
+      val from: SchemaValueType[From, VFrom#@From] = existingSchemaProjector.from
+      val to: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)]  = svtps
+      def apply(v: VFrom#@From): (VP *: VS) #@ (P #: S) =
+        (propertyProjector(v) *: existingSchemaProjector(v)).#@[(P #: S)]
 
   implicit class ValueOps[S <: RecordSchema, V](v: V)(using svtv: SchemaValueType[S, V]):
     type Schema = S
@@ -212,6 +212,10 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
       pp.apply(av)
     def /[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
       pp.apply(av)
+    def >>[VS2, S2 <: RecordSchema](s2: S2)(using p: Projector[S, V #@ S, S2, VS2 #@ S2]) =
+      p(av)
+    inline def π[VS2, S2 <: RecordSchema](s2: S2)(using p: Projector[S, V #@ S, S2, VS2 #@ S2]) =
+      p(av)
 
 trait TableBuilderAnnotatedTypes:
   final case class TableBuilderExtensionR[S <: RecordSchema, V <: Tuple](

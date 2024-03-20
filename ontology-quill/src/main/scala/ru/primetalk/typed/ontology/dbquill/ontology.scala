@@ -14,10 +14,15 @@ object Order1 extends TableBuilder:
   val date1 = date
   type Date        = date.type
   type TableSchema = Id #: Date #: EmptySchema
+
+  type SmallerSchema = Date #: EmptySchema
+  val smallerSchema = fields(date)
+
   val tableSchema: TableSchema = fields(id, date)
   val ts                       = fields(id, date)
   type TS = ts.Type
   val svt = summon[SchemaValueType.Aux1[TableSchema]]
+  val smallerSvt = summon[SchemaValueType.Aux1[SmallerSchema]]
   type Row = TupleConverter[svt.Value]
   // type ARow = svt.Value #@ TableSchema
   type ARow = (*:[Int, *:[LocalDate, EmptyTuple]]) #@ TableSchema

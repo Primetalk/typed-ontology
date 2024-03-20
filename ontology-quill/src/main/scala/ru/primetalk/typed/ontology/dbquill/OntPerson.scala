@@ -21,6 +21,7 @@ import io.getquill.generic.DecodingType
 import ru.primetalk.typed.ontology.dbquill.parser.TupleConverter
 import ru.primetalk.typed.ontology.dbquill.parser.ontQuote
 import io.getquill.util.LoadConfig
+import ru.primetalk.typed.ontology.simple.meta.Projector
 
 object OntPerson {
   given schemaBasedParser: SchemaBasedParser.type = SchemaBasedParser
@@ -36,7 +37,7 @@ object OntPerson {
 
     val orders = run(orderQuery)
 
-    println(orders.map(_ ->> Order1.date))
+    println(orders.map(_ π Order1.smallerSchema))
 
   }
 }
