@@ -1,5 +1,5 @@
-val scala3Version = "3.4.1-RC2"
-val mainVersion   = "0.2.5"
+val scala3Version = "3.4.2"
+val mainVersion   = "0.2.6"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -24,10 +24,10 @@ ThisBuild / versionScheme := Some("early-semver")
 // )
 
 val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.0"
-val catsCore   = "org.typelevel" %% "cats-core"   % "2.9.0"
+val catsCore   = "org.typelevel" %% "cats-core"   % "2.12.0"
 val fs2 = libraryDependencies ++= Seq(
-  "co.fs2" %% "fs2-core" % "3.7.0",
-  "co.fs2" %% "fs2-io"   % "3.7.0"
+  "co.fs2" %% "fs2-core" % "3.10.2",
+  "co.fs2" %% "fs2-io"   % "3.10.2"
 )
 
 val commonSettings = Seq(
@@ -40,8 +40,8 @@ val commonSettings = Seq(
     catsCore,
     //"io.github.kitlangton" %% "quotidian"       % "0.0.9",
     "com.novocode"          % "junit-interface" % "0.11"   % Test,
-    "org.scalacheck"       %% "scalacheck"      % "1.17.0" % Test,
-    "org.scalatest"        %% "scalatest"       % "3.2.15" % Test
+    "org.scalacheck"       %% "scalacheck"      % "1.17.1" % Test,
+    "org.scalatest"        %% "scalatest"       % "3.2.18" % Test
   )
 )
 
@@ -99,7 +99,10 @@ lazy val ontologyExample1 = project
   )
   .settings(commonSettings*)
 
-val quillVersion = "4.8.1"
+val quillVersion = "4.8.4"
+
+val postgresDriver = "org.postgresql" % "postgresql" % "42.7.3"
+val quillJdbc = "io.getquill" %% "quill-jdbc" % quillVersion // Synchronous JDBC Modules
 
 lazy val ontologyQuillParser = project
   .in(file("ontology-quill-parser"))
@@ -114,10 +117,8 @@ lazy val ontologyQuillParser = project
   .settings(commonSettings*)
   .settings(
     libraryDependencies ++= Seq(
-      // postgres driver
-      "org.postgresql" % "postgresql" % "42.7.0",
-      // Syncronous JDBC Modules
-      "io.getquill" %% "quill-jdbc" % quillVersion,
+      postgresDriver,
+      quillJdbc,
     )
   )
 
@@ -135,10 +136,8 @@ lazy val ontologyQuill = project
   .settings(commonSettings*)
   .settings(
     libraryDependencies ++= Seq(
-      // postgres driver
-      "org.postgresql" % "postgresql" % "42.7.0",
-      // Syncronous JDBC Modules
-      "io.getquill" %% "quill-jdbc" % quillVersion,
+      postgresDriver,
+      quillJdbc,
       // // Or ZIO Modules
       // "io.getquill" %% "quill-jdbc-zio" % quillVersion,
       // // Or Cassandra
