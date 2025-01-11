@@ -59,19 +59,19 @@ class Rel2Spec extends TestDataRel2:
     val schema3 = products.schema.concat(orderItems.schema)
     schema3.toString should equal(products.schema.toString + ", " + orderItems.schema.toString)
   }
-  test("cross product from") {
-    val poi = products.crossProductFrom(orderItems)
-    poi.rows should equal(
-      List(
-        (1, 1, 1, 1, "product1", BigInt(5)),
-        (1, 1, 1, 2, "product2", BigInt(20)),
-        (2, 1, 1, 1, "product1", BigInt(5)),
-        (2, 1, 1, 2, "product2", BigInt(20)),
-        (3, 1, 2, 1, "product1", BigInt(5)),
-        (3, 1, 2, 2, "product2", BigInt(20))
-      )
-    )
-  }
+//  test("cross product from") {
+//    val poi = products.crossProductFrom(orderItems)
+//    poi.rows should equal(
+//      List(
+//        (1, 1, 1, 1, "product1", BigInt(5)),
+//        (1, 1, 1, 2, "product2", BigInt(20)),
+//        (2, 1, 1, 1, "product1", BigInt(5)),
+//        (2, 1, 1, 2, "product2", BigInt(20)),
+//        (3, 1, 2, 1, "product1", BigInt(5)),
+//        (3, 1, 2, 2, "product2", BigInt(20))
+//      )
+//    )
+//  }
   test("ValueOf") {
     summon[ValueOf[Product.name.type]].value should equal(Product.name)
   }

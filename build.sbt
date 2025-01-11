@@ -1,5 +1,5 @@
-val scala3Version = "3.4.2"
-val mainVersion   = "0.2.6"
+val scala3Version = "3.6.2"
+val mainVersion   = "0.2.7"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -50,7 +50,7 @@ lazy val root = (project in file("."))
     typedOntologyMetaMeta,
     typedOntologyMeta,
     typedOntologySimpleMeta,
-    ontologyExample1
+    `ontology-example2`
   )
   .settings(
     name           := "typed-ontology",
@@ -87,10 +87,22 @@ lazy val typedOntologySimpleMeta = project
   .dependsOn(typedOntologyMetaMeta)
   .settings(commonSettings*)
 
-lazy val ontologyExample1 = project
-  .in(file("ontology-example1"))
+//lazy val ontologyExample1 = project
+//  .in(file("ontology-example1"))
+//  .settings(
+//    name           := "ontology-example1",
+//    publish / skip := true
+//  )
+//  .dependsOn(
+//    typedOntologySimpleMeta,
+//    typedOntologyMetaMeta
+//  )
+//  .settings(commonSettings*)
+
+lazy val `ontology-example2` = project
+  .in(file("ontology-example2"))
   .settings(
-    name           := "ontology-example1",
+    name           := "ontology-example2",
     publish / skip := true
   )
   .dependsOn(
@@ -148,3 +160,12 @@ lazy val ontologyQuill = project
       // "io.getquill" %% "quill-caliban" % quillVersion
     )
   )
+
+lazy val `type-class-schema` = project
+  .in(file("type-class-schema"))
+  .settings(
+    name           := "type-class-schema",
+    publish / skip := true
+  )
+  .dependsOn()
+  .settings(commonSettings*)

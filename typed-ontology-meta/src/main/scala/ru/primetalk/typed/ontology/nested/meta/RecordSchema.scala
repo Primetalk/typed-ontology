@@ -48,12 +48,12 @@ sealed trait RecordSchema:
 
   /** Concatenates properties of another schema. */
   // transparent inline def concat[S2 <: RecordSchema, This >: this.type <: RecordSchema](inline schema2: S2): RecordSchema.Concat[This, schema2.type] =
-  inline def concat[S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[this.type, schema2.type] =
-    inline this match
-      case _: EmptySchema =>
-        schema2
-      case sc: SchemaCons[p, s] =>
-        sc.p #: sc.schema.concat(schema2)
+//  inline def concat[S2 <: RecordSchema](schema2: S2): RecordSchema.Concat[this.type, schema2.type] =
+//    inline this match
+//      case _: EmptySchema =>
+//        schema2
+//      case sc: SchemaCons[p, s] =>
+//        sc.p #: sc.schema.concat(schema2)
 
   /** Type of the concatenation of two schemas. */
   type PrependOtherSchema[S1 <: RecordSchema] <: RecordSchema =
