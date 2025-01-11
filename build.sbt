@@ -106,8 +106,7 @@ lazy val `ontology-example2` = project
     publish / skip := true
   )
   .dependsOn(
-    typedOntologySimpleMeta,
-    typedOntologyMetaMeta
+    `type-class-schema`
   )
   .settings(commonSettings*)
 
