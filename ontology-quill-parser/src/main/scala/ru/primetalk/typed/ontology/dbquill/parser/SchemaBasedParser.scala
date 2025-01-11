@@ -30,8 +30,16 @@ import io.getquill.querySchema
 //   def apply[S <: SchemaLike, T](tableName: String, svt: SchemaValueType[S, T]) =
 //     new OntEntityQuery[S, T, svt.AValue](tableName, svt)
 // }
-import ru.primetalk.typed.ontology.simple.meta.SimpleTypes.{given, *}
+import ru.primetalk.typed.ontology.simple.meta.AnnotatedTypesContext.{given, *}
+import ru.primetalk.typed.ontology.simple.meta.#@
+
 import io.getquill.Quoted
+import io.getquill.parser.OperationsParser
+import scala.meta.Type.Project
+import ru.primetalk.typed.ontology.simple.meta.Projector
+import io.getquill.ast.Infix
+import io.getquill.parser.ComplexValueParser
+import io.getquill.quat.QuatMaking
 
 class OntEntityQuery[S <: SchemaLike, T, AV](val tableName: String, val svt: SchemaValueType[S, T])
     extends EntityQuery[T] {
@@ -120,23 +128,96 @@ class SchemaBasedParser(val rootParse: Parser)(using Quotes, TranspileConfig)
 
 }
 
+class OntologyOperationsParser(val rootParse: Parser)(using Quotes, TranspileConfig)
+    extends Parser(rootParse)
+    with Parser.PrefilterType[OntEntityQuery[?, ?, ?]]
+    with PropertyAliases
+    with Helpers {
+  import quotes.reflect._
+
+  /*
+  {
+              type s <: RecordSchema;
+
+              type AV <: v #@ s
+            } */
+
+  def attempt = expr =>
+    expr match {
+      case '{
+            type s <: RecordSchema
+            type vs <: Tuple
+            type s2 <: RecordSchema
+            type vs2
+            ($value: vs #@ s).π(
+              $schema: s2
+            )(using
+              $p: Projector[s, vs #@ s, s2, vs2 #@ s2]
+            )
+          } =>
+        report.info("triggered")
+        Infix(List("", " like ", ""), List(), true, false, Quat.Value)
+    }
+}
+
+class OntologyComplexValueParser(rootParse: Parser)(using Quotes, TranspileConfig)
+    extends Parser(rootParse)
+    with QuatMaking
+    with Helpers {
+  import quotes.reflect.{Constant => TConstant, Ident => TIdent, _}
+  import io.getquill.ast.{Tuple => AstTuple}
+  import io.getquill.ast.CaseClass
+  def attempt = {
+    case ArrowFunction(prop, value) =>
+      AstTuple(List(rootParse(prop), rootParse(value)))
+
+    // Parse tuples
+    case Unseal(Apply(TypeApply(Select(TupleIdent(), "apply"), types), values)) =>
+      AstTuple(values.map(v => rootParse(v.asExpr)))
+    // Parse Scala 3 tuples
+    case CaseClassCreation("*:", List(), args) =>
+      AstTuple(args.map(arg => rootParse(arg)))
+    case CaseClassCreation(ccName, fields, args) =>
+      report.errorAndAbort(s"CaseClassCreation($ccName, $fields, $args)")
+      if (fields.length != args.length)
+        throw new IllegalArgumentException(
+          s"In Case Class ${ccName}, does not have the same number of fields (${fields.length}) as it does arguments ${args.length} (fields: ${fields}, args: ${args
+              .map(_.show)})"
+        )
+      val argsAst = args.map(rootParse(_))
+      CaseClass(ccName, fields.zip(argsAst))
+
+    case orig @ Unseal(i @ TIdent(x)) =>
+      cleanIdent(i.symbol.name, InferQuat.ofType(i.tpe))
+  }
+}
+
 object SchemaBasedParser extends ParserLibrary:
   import Parser._
   override def queryParser(using Quotes, TranspileConfig) =
     ParserChain.attempt(SchemaBasedParser(_)) orElse
       ParserChain.attempt(QueryParser(_))
+
+  override protected def operationsParser(using Quotes, TranspileConfig): ParserChain =
+    ParserChain.attempt(OperationsParser(_)) orElse
+      ParserChain.attempt(OntologyOperationsParser(_))
+
+  override protected def complexValueParser(using Quotes, TranspileConfig): ParserChain =
+    ParserChain.attempt(OntologyComplexValueParser(_)) orElse
+      ParserChain.attempt(ComplexValueParser(_))
+
   // (using svt: SchemaValueType[S, V])
 
-  inline given svtGenericDecoder[S <: SchemaLike: Type, V <: Tuple: Type, ResultRow: Type, Session]
-      : GenericDecoder[ResultRow, Session, TupleConverter[V] #@ S, DecodingType.Specific] =
-    new:
-      def apply(i: Int, rr: ResultRow, s: Session): TupleConverter[V] #@ S =
-        var res: V | Null = null
-        val a             = res.#@[S]
-        res.asInstanceOf[TupleConverter[V] #@ S]
+  // inline given svtGenericDecoder[S <: SchemaLike: Type, V <: Tuple: Type, ResultRow: Type, Session]
+  //     : GenericDecoder[ResultRow, Session, TupleConverter[V] #@ S, DecodingType.Specific] =
+  //   new:
+  //     def apply(i: Int, rr: ResultRow, s: Session): TupleConverter[V] #@ S =
+  //       var res: V | Null = null
+  //       val a             = res.#@[S]
+  //       res.asInstanceOf[TupleConverter[V] #@ S]
 
-  inline given svtGenericEncoder[S <: SchemaLike: Type, V <: Tuple: Type, PrepareRow: Type, Session]
-      : GenericEncoder[TupleConverter[V] #@ S, PrepareRow, Session] =
-    new:
-      def apply(i: Int, t: TupleConverter[V] #@ S, row: PrepareRow, session: Session): PrepareRow =
-        scala.compiletime.error("svtGenericEncoder not implemented")
+  // inline given svtGenericEncoder[S <: SchemaLike: Type, V <: Tuple: Type, PrepareRow: Type, Session]
+  //     : GenericEncoder[TupleConverter[V] #@ S, PrepareRow, Session] =
+  //   new:
+  //     def apply(i: Int, t: TupleConverter[V] #@ S, row: PrepareRow, session: Session): PrepareRow =
+  //       scala.compiletime.error("svtGenericEncoder not implemented")
