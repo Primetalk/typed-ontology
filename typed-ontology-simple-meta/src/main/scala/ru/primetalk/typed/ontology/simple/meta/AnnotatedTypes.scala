@@ -78,15 +78,15 @@ trait RecordSchemaAnnotatedTypes:
   transparent inline given emptySchemaRSVT: RecordSchemaValueType[EmptySchema, EmptyTuple.type] =
     new RecordSchemaValueType
 
-  transparent inline given tuple1Schema[VP, P <: SimplePropertyId[?, VP]](using
-      svtp: RecordPropertyValueType[P, VP]
-  ): RecordSchemaValueType[SchemaCons[P, EmptySchema], VP *: EmptyTuple] =
-    new RecordSchemaValueType
+  // transparent inline given tuple1Schema[VP, P <: SimplePropertyId[?, VP]](using
+  //     svtp: RecordPropertyValueType[P, VP]
+  // ): RecordSchemaValueType[SchemaCons[P, EmptySchema], VP *: EmptyTuple] =
+  //   new RecordSchemaValueType
 
   transparent inline given nonEmptySchema[
     P <: SimplePropertyId[?, VP],
     VP,
-    S <: NonEmptySchema,
+    S <: RecordSchema,
     VS <: Tuple
   ](using
       svtp: RecordPropertyValueType[P, VP],
@@ -94,46 +94,45 @@ trait RecordSchemaAnnotatedTypes:
   ): RecordSchemaValueType[P #: svts.Schema, VP *: VS] =
     new RecordSchemaValueType
 
-// Projectors
-trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
+trait PropertyProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
 
-  transparent inline given propertyProjectorForAnnotatedValue[
-    P <: SimplePropertyId[?, VP],
-    VP,
-    From <: RecordSchema,
-    VFrom <: Tuple,
-  ](using 
-    pp: PropertyProjector[From, VFrom, P, VP],
-    svt: SchemaValueType[From, VFrom #@ From]
-    ): PropertyProjector[From, VFrom #@ From, P, VP] =
-    new:
-      val from: SchemaValueType[From, VFrom #@ From]       = svt
-      val rpvt: RecordPropertyValueType[P, VP] = pp.rpvt
-      type Value = VP
-      def apply(v: VFrom #@ From): VP =
-        pp.apply(v)
+
+  // transparent inline given propertyProjectorForAnnotatedValue[
+  //   P <: SimplePropertyId[?, VP],
+  //   VP,
+  //   From <: RecordSchema,
+  //   VFrom <: Tuple,
+  // ](using 
+  //   pp: PropertyProjector[From, VFrom, P, VP],
+  //   svt: SchemaValueType[From, VFrom #@ From]
+  //   ): PropertyProjector[From, VFrom #@ From, P, VP] =
+  //   new:
+  //     val from: SchemaValueType[From, VFrom #@ From]       = svt
+  //     val rpvt: RecordPropertyValueType[P, VP] = pp.rpvt
+  //     type Value = VP
+  //     def apply(v: VFrom #@ From): VP =
+  //       pp.apply(v)
       
   // Projectors for properties
   transparent inline given propertyProjectorHead[
-    VP,
     P <: SimplePropertyId[?, VP],
+    VP,
     S <: RecordSchema,
-    From <: P #: S,
-    VFrom <: Tuple,
+    VS <: Tuple,
   ](using
       rpvt: RecordPropertyValueType[P, VP],
-      svtp: SchemaValueType[rpvt.Schema, VP #@ rpvt.Schema],
-      svtps: SchemaValueType[From, VFrom #@ From]
-  ): PropertyProjector[From, VFrom #@ From, P, VP] =
+      // svtp: SchemaValueType[rpvt.Schema, VP #@ rpvt.Schema],
+      svtps: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)]
+  ): PropertyProjector[P #: S, (VP *: VS) #@ (P #: S), P, VP] =
 
     new:
-      val from: SchemaValueType[From, VFrom #@ From]   = svtps
+      val from: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)]   = svtps
       val rpvt: RecordPropertyValueType[P, VP] = rpvt
       type Value = VP
-      def apply(v: VFrom #@ From): VP =
+      def apply(v: (VP *: VS) #@ (P #: S)): VP =
         v match
-          case h *: _ =>
-            h.asInstanceOf[VP]
+          case (h: VP) *: _ =>
+            h
           case _ =>
             ???
 
@@ -144,7 +143,6 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
       P2 <: SimplePropertyId[?, VP2],
       S <: RecordSchema,
       VS <: Tuple,
-      // From <: P2 #: S,
   ](using
     rpvt1: RecordPropertyValueType[P, VP],
     propertyProjector: PropertyProjector[S, VS #@ S, P, VP],
@@ -160,8 +158,12 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
           case _ *: (t: VS) =>
             propertyProjector(t.#@[S])
 
+trait ProjectorAnnotatedTypes extends PropertyProjectorAnnotatedTypes:
   // Projectors for various schemas
-  transparent inline given emptySchemaProjector[From <: RecordSchema, VFrom](using
+  transparent inline given emptySchemaProjector[
+    From <: RecordSchema, 
+    VFrom <: Tuple
+  ](using
       svt: SchemaValueType[From, VFrom #@ From]
   ): Projector[From, VFrom #@ From, EmptySchema, EmptyTuple #@ EmptySchema] =
     new:
@@ -173,22 +175,23 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
 
   transparent inline given someSchemaPlusPropertyProjector[
       From <: RecordSchema,
-      VFrom,
+      VFrom <: Tuple,
       P <: SimplePropertyId[?, VP],
       VP,
       S <: RecordSchema,
       VS <: Tuple,
   ](using
-      rpvt: RecordPropertyValueType[P, VP],
-      existingSchemaProjector: Projector[From, VFrom#@From, S, VS #@ S],
-      propertyProjector: PropertyProjector[From, VFrom, P, VP],
+      propertyProjector: PropertyProjector[From, VFrom #@ From, P, VP],
+      existingSchemaProjector: Projector[From, VFrom #@ From, S, VS #@ S],
       svtps: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)]
-  ): Projector[From, VFrom #@From, P #: S, (VP *: VS) #@ (P #: S)] =
+  ): Projector[From, VFrom #@ From, P #: S, (VP *: VS) #@ (P #: S)] =
     new:
-      val from: SchemaValueType[From, VFrom#@From] = existingSchemaProjector.from
+      val from: SchemaValueType[From, VFrom #@ From] = existingSchemaProjector.from
       val to: SchemaValueType[P #: S, (VP *: VS) #@ (P #: S)]  = svtps
       def apply(v: VFrom#@From): (VP *: VS) #@ (P #: S) =
-        (propertyProjector(v) *: existingSchemaProjector(v)).#@[(P #: S)]
+        val vp = propertyProjector(v)
+        val vs = existingSchemaProjector(v): VS
+        (vp *: vs).#@[(P #: S)]
 
   implicit class ValueOps[S <: RecordSchema, V](v: V)(using svtv: SchemaValueType[S, V]):
     type Schema = S
@@ -208,13 +211,13 @@ trait ProjectorAnnotatedTypes extends RecordSchemaAnnotatedTypes:
       v.#@[t.TableSchema]
 
   extension [S <: RecordSchema, V](av: V #@ S)
-    def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
+    inline infix def ->>[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
       pp.apply(av)
-    def /[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
+    inline infix def /[VP,P <:SimplePropertyId[?, VP]](p: P)(using pp: PropertyProjector[S, V#@S, P, VP]) = 
       pp.apply(av)
-    def >>[VS2, S2 <: RecordSchema](s2: S2)(using p: Projector[S, V #@ S, S2, VS2 #@ S2]) =
+    inline infix def >>[VS2, S2 <: RecordSchema](s2: S2)(using p: Projector[S, V #@ S, S2, VS2 #@ S2]) =
       p(av)
-    inline def π[VS2, S2 <: RecordSchema](s2: S2)(using p: Projector[S, V #@ S, S2, VS2 #@ S2]) =
+    inline infix def π[VS2, S2 <: RecordSchema](s2: S2)(using p: Projector[S, V #@ S, S2, VS2 #@ S2]) =
       p(av)
 
 trait TableBuilderAnnotatedTypes:

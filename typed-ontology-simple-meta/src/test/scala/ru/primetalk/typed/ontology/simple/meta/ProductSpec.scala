@@ -49,4 +49,5 @@ class ProductSpec extends BaseSpec:
     assert(product1.->>(Product.id) == 1)
     assert(product1 ->> Product.name == "product1")
     assert(product1 / Product.price == BigInt(10))
+    assert((product1 π Product.idNameSchema) == Product.idNameSchema(1, "product1"))
   }
