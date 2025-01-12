@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.example2
 
-import ru.primetalk.typed.ontology.typeclass.schema.{Getter, RecordTupleValue, SchemaValueType}
+import ru.primetalk.typed.ontology.typeclass.schema.{Getter, Projector, RecordTupleValue, SchemaValueType}
 import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.{*, given}
@@ -15,4 +15,6 @@ class OrderOntologySpec extends BaseSpec:
     val svt1 = summon[SchemaValueType[Product.id, Int]]
     val svt = SchemaValueType.Aux[Product.id]
     assert(row.get(Product.id) == 1)
+    assert(row.project(Product.priceSchema) == BigInt(1) *: EmptyTuple)
+    assert(row.project(Product.idNameSchema) == (1, "product name"))
   }

@@ -31,6 +31,9 @@ object RecordTupleValue:
     inline def get[Column, ColumnValue](column: Column)(using svt: SchemaValueType[Column, ColumnValue])(using getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ColumnValue =
       getter(v)
 
+    inline def project[Dest <: Tuple, DestV <: Tuple](dest: Dest)(using proj: Projector[R, V, Dest, DestV]): RecordTupleValue[Dest, DestV] =
+      proj.apply(v)
+      
   object Prepend:
     def unapply[H, HV, R <: Tuple, V <: Tuple](r: RecordTupleValue[H *: R, HV *: V]): (HV, RecordTupleValue[R, V]) =
       (r.toTuple.head, r.toTuple.tail)

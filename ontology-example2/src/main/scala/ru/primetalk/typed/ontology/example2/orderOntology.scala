@@ -20,12 +20,16 @@ object Product:
   val tableSchema: TableSchema = (id, name, price)
   val idNameSchema             = (id, name)
   val namePriceSchema             = (name, price)
+  type priceSchema = price *: EmptyTuple 
+  type primitivePriceRow = BigInt *: EmptyTuple 
+  val priceSchema             = price *: EmptyTuple
   type PrimaryKeySchema        = id *: EmptyTuple
   val primaryKeySchema: PrimaryKeySchema         = Tuple1(id)
 
   val fullSchema = RecordSchema.infer[TableSchema]
   val svt = summon[SchemaValueType[TableSchema, ?]]
   type Row = svt.Value
+  type PrimitiveRow = (Int, String, BigInt)
   summon[Row =:= RecordTupleValue[TableSchema, (Int, String, BigInt)]]
   summon[(Int, String, BigInt) <:< Row]
 
