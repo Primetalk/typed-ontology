@@ -8,11 +8,11 @@ import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 import java.time.LocalDateTime
 
 object Product:
-  object id    extends TableColumn["id", Int]
-  type id = id.type 
-  object name  extends TableColumn["name", String]
+  case object id    extends TableColumn["id", Int]
+  type id = id.type
+  case object name  extends TableColumn["name", String]
   type name = name.type
-  object price extends TableColumn["price", BigInt]
+  case object price extends TableColumn["price", BigInt]
   type price = price.type
   type PriceSchema = price *: EmptyTuple
   type NamePriceSchema = name *: price *: EmptyTuple
@@ -24,14 +24,15 @@ object Product:
   val primaryKeySchema: PrimaryKeySchema         = Tuple1(id)
 
   val fullSchema = RecordSchema.infer[TableSchema]
-  val svt = SchemaValueType.Aux[TableSchema]
-  type Row1 = svt.Value
-  type Row = RecordTupleValue[TableSchema, Int *: String *: BigInt *: EmptyTuple]
+  val svt = summon[SchemaValueType[TableSchema, ?]]
+  type Row = svt.Value
+  summon[Row =:= RecordTupleValue[TableSchema, (Int, String, BigInt)]]
+  summon[(Int, String, BigInt) <:< Row]
 
 object Order:
-  object id   extends TableColumn["id", Int]
+  case object id   extends TableColumn["id", Int]
   type id = id.type
-  object date extends TableColumn["date", LocalDateTime]
+  case object date extends TableColumn["date", LocalDateTime]
   type date = date.type
   type TableSchema = id *: date *: EmptyTuple
   val tableSchema: TableSchema = (id, date)

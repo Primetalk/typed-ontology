@@ -14,7 +14,7 @@ trait ProjectorLowPriority2:
   import RecordTupleValue.prepend
 
   given nonEmptyDestHeadProjector[H, HV, Source <: Tuple, SV <: Tuple, Dest <: Tuple, DV <: Tuple](using
-    getter: Getter[H, HV, Source, SV],
+    getter: Getter[H, HV, RecordTupleValue[Source, SV]],
     svtd: RecordValueType[Dest, DV],
     hvt: SchemaValueType[H, HV],
     proj: Projector[Source, SV, Dest, DV]

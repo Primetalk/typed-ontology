@@ -2,7 +2,7 @@ package ru.primetalk.typed.ontology.typeclass.table
 
 import ru.primetalk.typed.ontology.typeclass.schema.*
 
-abstract class TableColumn[Name <: String, V]
+class TableColumn[Name <: String, V]
 
 object TableColumn:
 
@@ -15,7 +15,7 @@ object TableColumn:
   inline given [Name1 <: String : ValueOf, V, C <: TableColumn[Name1, V]: ValueOf]: Column[C] =
     new ColumnImpl[Name1, V, C]
 
-  inline given [Name1 <: String, V, C <: TableColumn[Name1, V]: ValueOf]: SchemaValueType[C, V] =
+  inline given svtForColumn[Name1 <: String, V, C <: TableColumn[Name1, V]: ValueOf]: SchemaValueType[C, V] =
     new SchemaValueType[C, V]
 
 end TableColumn

@@ -10,9 +10,9 @@ class OrderOntologySpec extends BaseSpec:
   test("get value"){
 
     val row: Product.Row = (1, "product name", BigInt(1))
-    val getter = summon[Getter[Product.id, Int, Product.id *: Product.name *: Product.price *: EmptyTuple, Int *: String *: BigInt *: EmptyTuple]]
+    val ev1 = summon[(Int, String, BigInt) <:< Product.Row]
+    val getter = summon[Getter[Product.id, Int, RecordTupleValue[Product.TableSchema, Int *: String *: BigInt *: EmptyTuple]]]
     val svt1 = summon[SchemaValueType[Product.id, Int]]
-//    val svt = SchemaValueType.Aux[Product.id]
-//    val ev = summon[svt.Value =:= Int]
-//    assert(row.get[Product.id, Int](using svt)(using getter) == 1)
+    val svt = SchemaValueType.Aux[Product.id]
+    assert(row.get(Product.id) == 1)
   }

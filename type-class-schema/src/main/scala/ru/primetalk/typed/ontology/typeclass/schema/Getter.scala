@@ -1,5 +1,8 @@
 package ru.primetalk.typed.ontology.typeclass.schema
 
+import scala.annotation.implicitNotFound
+
 @FunctionalInterface
-trait Getter[Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple]:
-  def apply(rtc: RecordTupleValue[Schema, SchemaValue]): ColumnValue
+@implicitNotFound(s"Cannot obtain $Column of type $ColumnValue from $Value")
+trait Getter[Column, ColumnValue, Value]:
+  def apply(rtc: Value): ColumnValue
