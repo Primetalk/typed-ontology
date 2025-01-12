@@ -1,8 +1,9 @@
 package ru.primetalk.typed.ontology.example2
 
-import ru.primetalk.typed.ontology.typeclass.schema.{Column, RecordSchema}
+import ru.primetalk.typed.ontology.typeclass.schema.{Column, RecordSchema, RecordTupleValue, RecordValueType, SchemaValueType}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.given
+import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 
 import java.time.LocalDateTime
 
@@ -23,8 +24,9 @@ object Product:
   val primaryKeySchema: PrimaryKeySchema         = Tuple1(id)
 
   val fullSchema = RecordSchema.infer[TableSchema]
-//  val svt = summon[SchemaValueType.Aux1[TableSchema]]
-//  type Row = svt.Value
+  val svt = SchemaValueType.Aux[TableSchema]
+  type Row1 = svt.Value
+  type Row = RecordTupleValue[TableSchema, Int *: String *: BigInt *: EmptyTuple]
 
 object Order:
   object id   extends TableColumn["id", Int]
@@ -34,9 +36,9 @@ object Order:
   type TableSchema = id *: date *: EmptyTuple
   val tableSchema: TableSchema = (id, date)
   val ts = (id, date)
-//  type TS = ts.Type
-//  val svt = summon[SchemaValueType.Aux1[TableSchema]]
-//  type Row = svt.Value
+
+  val svt = SchemaValueType.Aux[TableSchema]
+  type Row = svt.Value
 
 object OrderItem:
   object id        extends TableColumn["id", Int]
@@ -55,5 +57,5 @@ object OrderItem:
 //
 //  lazy val orderIdFk   = orderId.foreignKey(Order.id)
 //  lazy val productIdFk = productId.foreignKey(Product.id)
-//  val svt = summon[SchemaValueType.Aux1[TableSchema]]
-//  type Row = svt.Value
+  val svt = SchemaValueType.Aux[TableSchema]
+  type Row = svt.Value
