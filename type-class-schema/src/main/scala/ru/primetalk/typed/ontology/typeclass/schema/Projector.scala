@@ -1,5 +1,7 @@
 package ru.primetalk.typed.ontology.typeclass.schema
 
+import scala.language.experimental.namedTuples
+
 /** Projector from Source schema to Dest schema exists only if such conversion is possible. In this
   * case it allows to perform the conversion of values.
   *

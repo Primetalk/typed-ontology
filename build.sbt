@@ -164,7 +164,11 @@ lazy val `type-class-schema` = project
   .in(file("type-class-schema"))
   .settings(
     name           := "type-class-schema",
-    publish / skip := true
+    publish / skip := true,
+    scalacOptions ++= Seq(
+      "experimental",
+      "language:experimental.namedTuples"
+    )
   )
   .dependsOn()
   .settings(commonSettings*)
