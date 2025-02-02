@@ -8,7 +8,7 @@ import scala.NamedTupleDecomposition.*
 /** Type-level annotation of a Tuple with it's RecordSchema.
  * Elements are connected via Column[T], SchemaValueType[C].
  */
-opaque type RecordTupleValue[R <: Tuple, +V <: Tuple] >: V = V
+type RecordTupleValue[R <: Tuple, +V <: Tuple] = ValueWithSchema[R, V]
 
 /** Instance of this type-class only exists when there are corresponding Column[T], SchemaValueType[C]. */
 @implicitNotFound(msg = "Cannot prove that $V is a valid primitive value of schema $R.")
@@ -32,10 +32,10 @@ object RecordTupleValue:
     inline def toNamedTuple[Names <: Tuple](using columnsNames: ColumnsNames[R, Names]): NamedTuple[Names, V] =
       v.asInstanceOf[NamedTuple[Names, V]]
 
-    inline def prepend[H, HV](vh: HV)(using SchemaValueType[H, HV]): RecordTupleValue[H *: R, HV *: V] =
-      vh *: v.toTuple
+    inline def prepend[H, HV](vh: ValueWithSchema[H, HV]): RecordTupleValue[H *: R, HV *: V] =
+      vh.value *: v.toTuple
       
-    inline def get[Column, ColumnValue](column: Column)(using svt: SchemaValueType[Column, ColumnValue])(using getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ColumnValue =
+    inline def get[Column, ColumnValue](column: Column)(using svt: SchemaValueType[Column, ColumnValue])(using getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ValueWithSchema[Column, ColumnValue] =
       getter(v)
 
     inline def project[Dest <: Tuple, DestV <: Tuple](dest: Dest)(using proj: Projector[R, V, Dest, DestV]): RecordTupleValue[Dest, DestV] =

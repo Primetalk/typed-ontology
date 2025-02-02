@@ -12,8 +12,9 @@ object SchemaValueType:
     type Value
     val svt: SchemaValueType[SchemaOrColumn, Value]
 
-  class AuxImpl[SchemaOrColumn, V](val svt: SchemaValueType[SchemaOrColumn, V]) extends Aux[SchemaOrColumn]:
+  final class AuxImpl[SchemaOrColumn, V](val svt: SchemaValueType[SchemaOrColumn, V]) extends Aux[SchemaOrColumn]:
     type Value = V
+
   inline given [SchemaOrColumn, V](using SchemaValueType[SchemaOrColumn, V]): Aux[SchemaOrColumn] =
     new AuxImpl[SchemaOrColumn, V](summon)
 
