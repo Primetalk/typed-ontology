@@ -3,6 +3,33 @@ Typed ontology
 
 Typed ontology is a principled approach to model various domains with emphasis on the properties rather than data storage.
 
+## Introduction
+
+A recommended and supported way of handling data in Scala is using case classes.
+
+```scala
+case class Person(name: String, address: Address, dob: LocalDate)
+```
+
+Such representation combines the data structure ("name", "address", "dob") and the values themselves. This representation is static and it's not flexible enough for some use cases:
+- joins of a few entities cannot be represented by a similar flat structure;
+- if a library wants to append some additional fields (for instance, "createdOn", "createdBy"), it's not possible to do in a constructive way.
+
+If we separate the structure of an entity from data storage, we can have the desired flexibility. Traditionally this separation happened at runtime and compiler couldn't help us prove that our code is correct. In typed-ontology we talk about a representation that is  flexible and compile-time safe simultaneously.
+
+We represent entity structure using column-first approach and then we construct the higher-level data structures using an algebra with the following operations:
+
+- make a schema from a single column;
+- append a new column to an existing schema;
+- concatenate schemas;
+- project schema into a subschema.
+
+We call a collection of columns of all entities an **ontology**.
+
+A developer that develops an application can choose the way of how to represent columns. It's required that this representation has "name" and "type" of column value.
+
+## Library organization
+
 We work with the following abstraction layers:
 - **application** - actual code that work with data;
 - **schema** - part of an application that describes the data structure, object/properties//table/columns//entities/attributes, relations between entities.
@@ -16,6 +43,8 @@ will be used in schema definition - methods for defining entities/classes, metho
   - For some applications it's required to preserve additional information about properties, for example, database types or serialization/deserialization attributes.
 - **meta-tools** - part of typed-ontology library (which could be customized), that provides foundation for `meta`. Mostly - base classes, type classes, macroses to facilitate meta definition.
 
+The current approach to represent schemas is defined in `type-class-schema` module. See [README.md](type-class-schema/README.md).
+
 ## Records, attributes and schemas
 
 We use term **record** when we talk about an ontology class or a relational "relation"/"table".
@@ -26,7 +55,7 @@ An instance or a **record** may have some **values** of it's **attributes**.
 The collection of attributes of an instance is determined by it's **schema**.
 
 For example, an entity `A` may have attributes `a`, `b`, `c`. And we can create a few *schemas* for the same entity - 
-`(a,b)`, `(a)`, `(a,b,c)`. We may even talk about a schema that spans a few entities - `(A.a, A.b, B.a)`.
+`(a,b)`, `(a)`, `(a,b,c)`. We may even talk about a schema that spans a few entities - `(A.a, A.b, B.a)` (as a result of a join). 
 
 
 A generic representation of an **instance** might be a 

@@ -1,8 +1,6 @@
 # Type-class based ontology schema
 
-This project presents an attempt to define schema 
-using Tuples with some evidence that 
-each tuple element has associated type-class instance.
+This project presents an attempt to define schema using Tuples with some evidence that each tuple element has associated type-class instance.
 
 ## Column representation
 
@@ -22,3 +20,6 @@ that gives the type of values in that column.
 
 ## Record value
 
+We use `ValueWithSchema` as a universal mechanism to associate schema with a value. In particular, Record schema and Record value are associated using `RecordTupleValue` (which is a type alias for `ValueWithSchema`).
+
+Underlying value is in `Tuple`.
