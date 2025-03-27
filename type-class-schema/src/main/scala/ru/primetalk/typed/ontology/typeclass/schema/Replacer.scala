@@ -12,10 +12,8 @@ object Replacer:
                                                   svt: RecordValueType[S, V],
                                                   fHvt: SchemaValueType[FROM, HV],
                                                   tHvt: SchemaValueType[TO, HV],
-                                                 ): Replacer[S, FROM, TO, V] =
-    new Replacer {
-      def apply(v: RecordTupleValue[S, V]): RecordTupleValue[Replace[S, FROM, TO], V] =
+                                                 ): Replacer[S, FROM, TO, V] with
+    def apply(v: RecordTupleValue[S, V]): RecordTupleValue[Replace[S, FROM, TO], V] =
         v.asInstanceOf[RecordTupleValue[Replace[S, FROM, TO], V]]
-    }
 
 end Replacer

@@ -24,7 +24,7 @@ object Product:
   val tableSchema: TableSchema = (id, name, price)
   val idNameSchema             = (id, name)
   val namePriceSchema   = name *: price *: EmptyTuple
-  // val descPriceSchema          = replace[NamePriceSchema, name, description](namePriceSchema, name, description)
+  val descPriceSchema          = replace[NamePriceSchema, name, description](name *: price *: EmptyTuple, name, description)
   type priceSchema       = price *: EmptyTuple
   type primitivePriceRow = BigInt *: EmptyTuple
   val priceSchema = price *: EmptyTuple
