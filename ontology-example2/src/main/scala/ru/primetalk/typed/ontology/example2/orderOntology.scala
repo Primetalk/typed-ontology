@@ -1,14 +1,7 @@
 package ru.primetalk.typed.ontology.example2
 
 import scala.language.experimental.namedTuples
-
-import ru.primetalk.typed.ontology.typeclass.schema.{
-  Column,
-  RecordSchema,
-  RecordTupleValue,
-  RecordValueType,
-  SchemaValueType
-}
+import ru.primetalk.typed.ontology.typeclass.schema.{Column, RecordSchema, RecordTupleValue, RecordValueType, Replace, SchemaValueType, replace}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.given
 import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
@@ -20,14 +13,18 @@ object Product:
   type id = id.type
   case object name extends TableColumn["name", String]
   type name = name.type
+  case object description extends TableColumn["description", String]
+  type description = description.type
   case object price extends TableColumn["price", BigInt]
   type price           = price.type
   type PriceSchema     = price *: EmptyTuple
   type NamePriceSchema = name *: price *: EmptyTuple
+  type DescPriceSchema = Replace[NamePriceSchema, name, description]
   type TableSchema     = id *: name *: price *: EmptyTuple
   val tableSchema: TableSchema = (id, name, price)
   val idNameSchema             = (id, name)
-  val namePriceSchema          = (name, price)
+  val namePriceSchema   = name *: price *: EmptyTuple
+  val descPriceSchema          = replace[NamePriceSchema, name, description](name *: price *: EmptyTuple, name, description)
   type priceSchema       = price *: EmptyTuple
   type primitivePriceRow = BigInt *: EmptyTuple
   val priceSchema = price *: EmptyTuple

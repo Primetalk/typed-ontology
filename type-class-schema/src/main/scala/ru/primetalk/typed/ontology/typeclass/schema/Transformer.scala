@@ -56,5 +56,12 @@ object Transformer extends ProjectionTransformerLowPriority:
       svt: RecordValueType[S, V]
   ): Transformer[S, RecordTupleValue[S, V], S, RecordTupleValue[S, V]] =
     identity
+    
+  given identityReplacerTransformer[S <: Tuple, V <: Tuple, From, To, FromV](using
+    svt: RecordValueType[S, V],
+    fsvt: SchemaValueType[From, FromV],
+    tsvt: SchemaValueType[To, FromV],
+  ): ReplacerTransformer[S, V, From, To] =
+    identity
 
 end Transformer
