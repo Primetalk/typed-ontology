@@ -1,5 +1,5 @@
-val scala3Version = "3.6.2"
-val mainVersion   = "0.2.7"
+val scala3Version = "3.6.4"
+val mainVersion   = "0.2.8"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -23,11 +23,11 @@ ThisBuild / versionScheme := Some("early-semver")
 //   //  "-Xmax-inlines=64"
 // )
 
-val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.0"
-val catsCore   = "org.typelevel" %% "cats-core"   % "2.12.0"
+val catsEffect = "org.typelevel" %% "cats-effect" % "3.6.0"
+val catsCore   = "org.typelevel" %% "cats-core"   % "2.13.0"
 val fs2 = libraryDependencies ++= Seq(
-  "co.fs2" %% "fs2-core" % "3.10.2",
-  "co.fs2" %% "fs2-io"   % "3.10.2"
+  "co.fs2" %% "fs2-core" % "3.12.0",
+  "co.fs2" %% "fs2-io"   % "3.12.0"
 )
 
 val commonSettings = Seq(
@@ -40,8 +40,8 @@ val commonSettings = Seq(
     catsCore,
     //"io.github.kitlangton" %% "quotidian"       % "0.0.9",
     "com.novocode"          % "junit-interface" % "0.11"   % Test,
-    "org.scalacheck"       %% "scalacheck"      % "1.17.1" % Test,
-    "org.scalatest"        %% "scalatest"       % "3.2.18" % Test
+    "org.scalacheck"       %% "scalacheck"      % "1.18.1" % Test,
+    "org.scalatest"        %% "scalatest"       % "3.2.19" % Test
   )
 )
 
