@@ -23,3 +23,11 @@ that gives the type of values in that column.
 We use `ValueWithSchema` as a universal mechanism to associate schema with a value. In particular, Record schema and Record value are associated using `RecordTupleValue` (which is a type alias for `ValueWithSchema`).
 
 Underlying value is in `Tuple`.
+
+## Relations
+
+A relation is a collection of values annotated with the same schema.
+We'd like to support the following operations:
+- projection 
+- cartesian product
+- inner join
