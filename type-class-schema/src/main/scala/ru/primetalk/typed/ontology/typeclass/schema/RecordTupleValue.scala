@@ -35,8 +35,8 @@ object RecordTupleValue:
     inline def prepend[H, HV](vh: ValueWithSchema[H, HV]): RecordTupleValue[H *: R, HV *: V] =
       vh.value *: v.toTuple
       
-    inline def get[Column, ColumnValue](column: Column)(using svt: SchemaValueType[Column, ColumnValue])(using getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ValueWithSchema[Column, ColumnValue] =
-      getter(v)
+    inline def get[Column, ColumnValue](column: Column)(using svt: SchemaValueType[Column, ColumnValue])(using getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ColumnValue =
+      getter(v).value
 
     inline def project[Dest <: Tuple, DestV <: Tuple](dest: Dest)(using proj: Projector[R, V, Dest, DestV]): RecordTupleValue[Dest, DestV] =
       proj.apply(v)

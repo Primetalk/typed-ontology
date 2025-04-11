@@ -32,3 +32,11 @@ class OrderOntologySpec extends BaseSpec:
     assert(row.project(Product.priceSchema) == BigInt(1) *: EmptyTuple)
     assert(row.project(Product.idNameSchema) == (1, "product name"))
   }
+
+  test("nested get value"){
+    val p1: Person.Row = ("name", ("street", 1))
+    val a1 = p1.get(Person.address)
+    val a2: Address.Row = p1.get(Person.address)
+    assert(p1.get(Person.address) == ("street", 1))
+    assert(p1.get(Person.address).get(Address.street) == "street")
+  }
