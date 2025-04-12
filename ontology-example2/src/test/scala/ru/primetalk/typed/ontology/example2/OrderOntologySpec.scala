@@ -11,6 +11,7 @@ import ru.primetalk.typed.ontology.typeclass.schema.{
 import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.{*, given}
+import ru.primetalk.typed.ontology.typeclass.table.FromDSL
 
 class OrderOntologySpec extends BaseSpec:
 
@@ -39,4 +40,16 @@ class OrderOntologySpec extends BaseSpec:
     val a2: Address.Row = p1.get(Person.address)
     assert(p1.get(Person.address) == ("street", 1))
     assert(p1.get(Person.address).get(Address.street) == "street")
+  }
+
+  test("calculated column"){
+    val p1: Person.Row = ("name", ("street", 1))
+    val f = FromDSL[Person.Row]()
+    object NameStreet extends f.CalculatedColumn["NameStreet", String](row => row.get(Person.name) + row.get(Person.address).get(Address.street))
+
+    type NameStreet = NameStreet.type
+    type PersonSchema2 = NameStreet *: Person.TableSchema
+    val PersonSchema2 = NameStreet *: Person.tableSchema
+    val p2 = p1.project(PersonSchema2)
+    assert(p2 == ("namestreet", "name", ("street", 1)))
   }
