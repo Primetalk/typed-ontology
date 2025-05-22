@@ -24,9 +24,19 @@ We represent entity structure using column-first approach and then we construct 
 - concatenate schemas;
 - project schema into a subschema.
 
-We call a collection of columns of all entities an **ontology**.
+We call a collection of columns of all entities an **ontology**. A particular collection of columns is called a **schema**. Columns could very well come from different entities. The term ontology is more broad than schema.
 
 A developer that develops an application can choose the way of how to represent columns. It's required that this representation has "name" and "type" of column value.
+
+## Current model vs legacy models
+
+This repository contains a few attempts to produce an ontology. The most recent approach is based on tuples and is being developed in the project `type-class-schema`. Usage examples could be found in `ontology-example2`.
+
+The current approach to represent schemas is defined in `type-class-schema` module. See [README.md](type-class-schema/README.md).
+
+# Legacy approach
+
+The rest of this readme contains the description of the older version of the library. However, it might still be of interest as not all of the features of this legacy approach has been already implemented in the novel approach.
 
 ## Library organization
 
@@ -42,8 +52,6 @@ will be used in schema definition - methods for defining entities/classes, metho
   - **simple-meta** project that shows an example of how to define properties that are identified by names. For many applications this simple meta might be enough.
   - For some applications it's required to preserve additional information about properties, for example, database types or serialization/deserialization attributes.
 - **meta-tools** - part of typed-ontology library (which could be customized), that provides foundation for `meta`. Mostly - base classes, type classes, macroses to facilitate meta definition.
-
-The current approach to represent schemas is defined in `type-class-schema` module. See [README.md](type-class-schema/README.md).
 
 ## Records, attributes and schemas
 
@@ -199,6 +207,6 @@ Collection operations:
 ## Tasks
 
 - [ ] sql-style grouping + aggregate (with on-the-fly schema construction)
-- [ ] Support case classes (infer schema from case class; map data to case class)
+- [ ] Support case classes (infer schema from case class; map data to case class). (See ZIO Schema for intuition)
 - [ ] erased relational expressions
 - [ ] compile-time relational expressions rewrite for arbitrary expressions
