@@ -12,6 +12,7 @@ import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.FromDSL
+import ru.primetalk.typed.ontology.typeclass.schema.RuntimeNames
 
 class OrderOntologySpec extends BaseSpec:
 
@@ -53,3 +54,9 @@ class OrderOntologySpec extends BaseSpec:
     val p2 = p1.project(PersonSchema2)
     assert(p2 == ("namestreet", "name", ("street", 1)))
   }
+
+  test("runtime names"){
+    val rn = summon[RuntimeNames[Person.TableSchema]]
+    assert(rn.names == List("name", "address"))
+  }
+  
