@@ -106,7 +106,7 @@ lazy val `ontology-example2` = project
     publish / skip := true
   )
   .dependsOn(
-    `type-class-schema`
+    `tuple-schema-tethys`
   )
   .settings(commonSettings*)
 
@@ -160,7 +160,7 @@ lazy val ontologyQuill = project
     )
   )
 
-lazy val `type-class-schema` = project
+lazy val `tuple-schema` = project
   .in(file("type-class-schema"))
   .settings(
     name           := "type-class-schema",
@@ -171,4 +171,23 @@ lazy val `type-class-schema` = project
     )
   )
   .dependsOn()
+  .settings(commonSettings*)
+
+val tethysVersion = "0.29.5"
+
+lazy val `tuple-schema-tethys` = project
+  .in(file("tuple-schema-tethys"))
+  .settings(
+    name           := "tuple-schema-tethys",
+    publish / skip := true,
+    scalacOptions ++= Seq(
+      "experimental",
+      "language:experimental.namedTuples"
+    ),
+    libraryDependencies ++= Seq(
+      "com.tethys-json" %% "tethys-core" % tethysVersion,
+      "com.tethys-json" %% "tethys-jackson213" % tethysVersion
+    )
+  )
+  .dependsOn(`tuple-schema`)
   .settings(commonSettings*)
