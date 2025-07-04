@@ -35,28 +35,30 @@ class OrderOntologySpec extends BaseSpec:
     assert(row.project(Product.idNameSchema) == (1, "product name"))
   }
 
-  test("nested get value"){
-    val p1: Person.Row = ("name", ("street", 1))
-    val a1 = p1.get(Person.address)
+  test("nested get value") {
+    val p1: Person.Row  = ("name", ("street", 1))
+    val a1              = p1.get(Person.address)
     val a2: Address.Row = p1.get(Person.address)
     assert(p1.get(Person.address) == ("street", 1))
     assert(p1.get(Person.address).get(Address.street) == "street")
   }
 
-  test("calculated column"){
+  test("calculated column") {
     val p1: Person.Row = ("name", ("street", 1))
-    val f = FromDSL[Person.Row]()
-    object NameStreet extends f.CalculatedColumn["NameStreet", String](row => row.get(Person.name) + row.get(Person.address).get(Address.street))
+    val f              = FromDSL[Person.Row]()
+    object NameStreet
+        extends f.CalculatedColumn["NameStreet", String](row =>
+          row.get(Person.name) + row.get(Person.address).get(Address.street)
+        )
 
-    type NameStreet = NameStreet.type
+    type NameStreet    = NameStreet.type
     type PersonSchema2 = NameStreet *: Person.TableSchema
     val PersonSchema2 = NameStreet *: Person.tableSchema
-    val p2 = p1.project(PersonSchema2)
+    val p2            = p1.project(PersonSchema2)
     assert(p2 == ("namestreet", "name", ("street", 1)))
   }
 
-  test("runtime names"){
+  test("runtime names") {
     val rn = summon[RuntimeNames[Person.TableSchema]]
     assert(rn.names == List("name", "address"))
   }
-  
