@@ -71,3 +71,4 @@ project/plugins/project/
 .bloop/
 .bsp/
 .metals/
+metals.sbt
