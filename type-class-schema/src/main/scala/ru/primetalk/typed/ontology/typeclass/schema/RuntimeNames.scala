@@ -20,7 +20,6 @@ trait RuntimeNames[T]:
 
 object RuntimeNames:
 
-  inline def names[T <: Tuple]: T = constValueTuple[T]
   final class RuntimeNamesImpl[S](val names: List[String]) extends RuntimeNames[S]
   inline given nonEmpty[S <: Tuple, N <: Tuple](using columnNames: ColumnsNames[S,N]): RuntimeNames[S] = {
     val n = constValueTuple[N]
