@@ -1,6 +1,7 @@
 package ru.primetalk.typed.ontology.typeclass.fschema
 
-import cats.Id
+import cats.{Functor, Id}
+import cats.syntax.functor.given
 import ru.primetalk.typed.ontology.typeclass.schema.{Column, ColumnsNames, SchemaValueType, ValueWithSchema}
 
 import scala.annotation.{implicitNotFound, targetName}
@@ -57,14 +58,15 @@ object RecordTupleValueF:
 
   object Prepend:
     def unapply[F[_], H, HV, R <: Tuple, V <: Tuple](r: RecordTupleValueF[F, H *: R, HV *: V]): (F[HV], RecordTupleValueF[F, R, V]) =
-      (r.toTuple.head, r.toTuple.tail)
+      (r.head, r.tail)
 
-  inline given dropGetter[OtherColumn, OtherColumnValue, Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple](using getter: Getter[Column, ColumnValue, RecordTupleValueF[F[_], Schema, SchemaValue]]): Getter[Column, ColumnValue, RecordTupleValueF[F[_], OtherColumn *: Schema, OtherColumnValue *: SchemaValue]] = {
+  inline given dropGetter[F[_], OtherColumn, OtherColumnValue, Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple](using getter: GetterF[F, Column, ColumnValue, RecordTupleValueF[F, Schema, SchemaValue]]): GetterF[F, Column, ColumnValue, RecordTupleValueF[F, OtherColumn *: Schema, OtherColumnValue *: SchemaValue]] = {
     case Prepend(_, tail) =>
       getter(tail)
   }
-//
-//  inline given headGetter[Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple]: Getter[Column, ColumnValue, RecordTupleValueF[F[_], Column *: Schema, ColumnValue *: SchemaValue]] = {
-//    case Prepend(head, _) =>
-//      head
-//  }
+
+  inline given headGetter[F[_] : Functor, Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple]: GetterF[F, Column, ColumnValue, RecordTupleValueF[F, Column *: Schema, ColumnValue *: SchemaValue]] = new GetterF:
+    override def apply(rtc: Tuple.Map[SchemaValue, F]): F[ValueWithSchema[Column, ColumnValue]] = rtc match {
+      case Prepend(head: F[ColumnValue], _) =>
+        head.map(v => v: ValueWithSchema[Column, ColumnValue])
+    }
