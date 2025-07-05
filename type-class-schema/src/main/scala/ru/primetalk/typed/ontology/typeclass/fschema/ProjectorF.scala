@@ -7,5 +7,5 @@ import scala.language.experimental.namedTuples
   *
   * NB! In general, construction of projection requires `O(n^^2)` operations.
   */
-type ProjectorF[F[_], Source <: Tuple, SourceV <: Tuple, Dest <: Tuple, DestV <: Tuple] =
+type ProjectorF[F[+_], Source <: Tuple, SourceV <: Tuple, Dest <: Tuple, DestV <: Tuple] =
   TransformerF[F, Source, RecordTupleValueF[F, Source, SourceV], Dest, RecordTupleValueF[F, Dest, DestV]]
