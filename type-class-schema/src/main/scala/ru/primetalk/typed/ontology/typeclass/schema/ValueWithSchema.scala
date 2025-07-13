@@ -14,6 +14,6 @@ object ValueWithSchema:
     new IdentityConversion[ValueWithSchema[Schema, Value]]
 
   extension [Schema, Value](vws: ValueWithSchema[Schema, Value])
-    def value: Value = vws
+    inline def value: Value = vws
 
 end ValueWithSchema

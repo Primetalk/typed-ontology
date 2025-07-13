@@ -31,3 +31,20 @@ We'd like to support the following operations:
 - projection 
 - cartesian product
 - inner join
+
+## Record representation
+
+We have a few options of how to store record values:
+- tuples;
+- `JsonObject`;
+- `Map[String, Any]`;
+- ...
+
+In order to generalize storage we might use a type class `RecordRepr` that captures the operations that are required to compose record value and extract column values.
+
+```scala
+trait RecordRepr[A]:
+  type Prepend[HS, HV, S <:Tuple, A]
+  inline def prepend[HS, HV, S <:Tuple](h: HV, value: ValueWithSchema[S, A])(using SchemaValueType[HS *: S, A]): Prepend[HS, HV, S, A] 
+  inline def get
+```
