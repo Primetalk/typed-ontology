@@ -41,6 +41,14 @@ object RecordTupleValue:
     inline def project[Dest <: Tuple, DestV <: Tuple](dest: Dest)(using proj: Projector[R, V, Dest, DestV]): RecordTupleValue[Dest, DestV] =
       proj.apply(v)
 
+  extension [V <: Tuple](v: V)
+    inline def asRecord[S <: Tuple](using svt: SchemaValueType[S, RecordTupleValue[S, V]]): svt.Value =
+      v: svt.Value
+
+  extension [P <: Product](p: P)
+    inline def asRecord[S <: Tuple](using m: scala.deriving.Mirror.ProductOf[P])(using svt: SchemaValueType[S, RecordTupleValue[S, m.MirroredElemTypes]]): svt.Value =
+      Tuple.fromProductTyped[P](p).asRecord[S]
+
   object Prepend:
     def unapply[H, HV, R <: Tuple, V <: Tuple](r: RecordTupleValue[H *: R, HV *: V]): (HV, RecordTupleValue[R, V]) =
       (r.toTuple.head, r.toTuple.tail)

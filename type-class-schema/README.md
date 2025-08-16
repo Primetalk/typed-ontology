@@ -2,6 +2,14 @@
 
 This project presents an attempt to define schema using Tuples with some evidence that each tuple element has associated type-class instance.
 
+Basic supported features:
+
+- construct schema by prepending a new column to an existing schema;
+- construct schema from the list of columns (using macros);
+- ensure that a tuple is compatible with the schema;
+- check that one schema belongs to another;
+- project one tuple in one schema into another schema (in case the target schema is subset of the original one).
+
 ## Column representation
 
 A column should have `Name` at type level. 
@@ -31,3 +39,12 @@ We'd like to support the following operations:
 - projection 
 - cartesian product
 - inner join
+
+## Case class compatibility
+
+It's possible to convert an existing case class with compatible fields to Record:
+```scala
+case class MyProduct1(id: Int, name: String, price: BigInt)
+val row3 = MyProduct1(1, "product name", 1).asRecord[Product.TableSchema]
+```
+This inline function uses `Mirror` to perform compile time conversion.

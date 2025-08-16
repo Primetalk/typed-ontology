@@ -13,6 +13,7 @@ import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.FromDSL
 import ru.primetalk.typed.ontology.typeclass.schema.RuntimeNames
+import scala.runtime.Tuples
 
 class OrderOntologySpec extends BaseSpec:
 
@@ -61,4 +62,15 @@ class OrderOntologySpec extends BaseSpec:
   test("runtime names") {
     val rn = summon[RuntimeNames[Person.TableSchema]]
     assert(rn.names == List("name", "address"))
+  }
+
+  test("map from case class"){
+    val row: Product.Row = (1, "product name", BigInt(1))
+    case class MyProduct1(id: Int, name: String, price: BigInt)
+    val p1 = MyProduct1.apply.tupled(row.toTuple)
+    val row2 = p1.asRecord[Product.TableSchema]
+    assert(p1.id == 1)
+    assert(row2 == row)
+    val row3 = MyProduct1(1, "product name", 1).asRecord[Product.TableSchema]
+    assert(row3 == row)
   }
