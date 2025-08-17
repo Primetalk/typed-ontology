@@ -45,6 +45,10 @@ We'd like to support the following operations:
 It's possible to convert an existing case class with compatible fields to Record:
 ```scala
 case class MyProduct1(id: Int, name: String, price: BigInt)
-val row3 = MyProduct1(1, "product name", 1).asRecord[Product.TableSchema]
+val p = MyProduct1(1, "product name", 1)
+val row = p.asRecord[Product.TableSchema]
+val p2 = row.as[MyProduct1]
+assert(p == p2)
 ```
-This inline function uses `Mirror` to perform compile time conversion.
+These inline functions use `Mirror` to perform compile time conversion.
+

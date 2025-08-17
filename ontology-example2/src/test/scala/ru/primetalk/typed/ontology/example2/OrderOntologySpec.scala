@@ -64,10 +64,12 @@ class OrderOntologySpec extends BaseSpec:
     assert(rn.names == List("name", "address"))
   }
 
-  test("map from case class"){
+  test("map from/to case class"){
     val row: Product.Row = (1, "product name", BigInt(1))
     case class MyProduct1(id: Int, name: String, price: BigInt)
     val p1 = MyProduct1.apply.tupled(row.toTuple)
+    val p2: MyProduct1 = row.as
+    assert(p1 == p2)
     val row2 = p1.asRecord[Product.TableSchema]
     assert(p1.id == 1)
     assert(row2 == row)

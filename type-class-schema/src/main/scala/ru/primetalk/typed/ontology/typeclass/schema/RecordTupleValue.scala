@@ -41,6 +41,9 @@ object RecordTupleValue:
     inline def project[Dest <: Tuple, DestV <: Tuple](dest: Dest)(using proj: Projector[R, V, Dest, DestV]): RecordTupleValue[Dest, DestV] =
       proj.apply(v)
 
+    inline def as[P <: Product](using m: scala.deriving.Mirror.ProductOf[P]): P =
+      m.fromProduct(v.toTuple)
+
   extension [V <: Tuple](v: V)
     inline def asRecord[S <: Tuple](using svt: SchemaValueType[S, RecordTupleValue[S, V]]): svt.Value =
       v: svt.Value
