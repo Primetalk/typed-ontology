@@ -7,6 +7,11 @@ import cats.FlatMap
 import cats.Functor
 import cats.FunctorFilter
 
+/** Отношение содержит как схему, так и элементы в коллекции Coll.
+ * 
+ * "Коллекцией", впрочем, может выступать и что-то другое - Future, Stream и т.п. 
+ * Лишь бы были определены соответствующие type-классы - Functor, FlatMap, etc.
+ */
 type Relation[S <: Tuple, Value, Coll[_]] = Coll[ValueWithSchema[S, Value]]
 
 extension [S <: Tuple, Value <: Tuple, Coll[_]](r: Relation[S, Value, Coll])

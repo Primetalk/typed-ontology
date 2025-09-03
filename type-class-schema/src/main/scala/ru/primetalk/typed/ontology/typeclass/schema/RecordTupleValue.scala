@@ -11,10 +11,22 @@ import scala.NamedTupleDecomposition.*
 type RecordTupleValue[R <: Tuple, +V <: Tuple] = ValueWithSchema[R, V]
 
 /** Instance of this type-class only exists when there are corresponding Column[T], SchemaValueType[C]. */
-@implicitNotFound(msg = "Cannot prove that $V is a valid primitive value of schema $R.")
+@implicitNotFound(msg = "Cannot prove that ${V} is a valid primitive value of schema ${R}.")
 final class ValidRecordTupleValue[R <: Tuple, V <: Tuple]
 
 object RecordTupleValue:
+  final class RecordTupleValueApi[R <: Tuple]:
+    def apply[V <: Tuple](v: V)(using ValidRecordTupleValue[R, V]): RecordTupleValue[R, V] =
+      v
+
+  def apply[R <: Tuple]: RecordTupleValueApi[R] = new RecordTupleValueApi
+
+  final class FromNamedTupleApi[R <: Tuple]:
+    inline def apply[V <: Tuple, Names <: Tuple](t: NamedTuple[Names, V])(using columnsNames: ColumnsNames[R, Names], svt: ValidRecordTupleValue[R, V]): RecordTupleValue[R, V] =
+      RecordTupleValue[R](t.toTuple)
+      
+  inline def fromNamedTuple[R <: Tuple]: FromNamedTupleApi[R] = new FromNamedTupleApi
+
   private val EmptyValidRecordTupleValue = new ValidRecordTupleValue[EmptyTuple, EmptyTuple]
   
   given emptyValidRecordTupleValue: ValidRecordTupleValue[EmptyTuple, EmptyTuple] =
@@ -25,6 +37,10 @@ object RecordTupleValue:
 
   given svtFromValidRecordTupleValue[S <: Tuple, V <: Tuple](using vrtv: ValidRecordTupleValue[S, V]): SchemaValueType[S, RecordTupleValue[S, V]] =
     new SchemaValueType[S, RecordTupleValue[S, V]]
+
+  extension [R <: Tuple](r: R)
+    inline def fromNamedTuple[V <: Tuple, Names <: Tuple](t: NamedTuple[Names, V])(using columnsNames: ColumnsNames[R, Names], svt: ValidRecordTupleValue[R, V]): RecordTupleValue[R, V] =
+      RecordTupleValue[R](t.toTuple)
 
   extension [R <: Tuple, V <: Tuple](v: RecordTupleValue[R, V])
     inline def toTuple: V = v.asInstanceOf[V]

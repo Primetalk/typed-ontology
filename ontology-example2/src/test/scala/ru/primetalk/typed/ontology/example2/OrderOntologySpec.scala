@@ -18,11 +18,7 @@ import scala.runtime.Tuples
 class OrderOntologySpec extends BaseSpec:
 
   test("get value") {
-
     val row: Product.Row = (1, "product name", BigInt(1))
-    val a                = row.toNamedTuple
-    assert(a.id == 1)
-    assert(a.name == "product name")
     val ev1 = summon[(Int, String, BigInt) <:< Product.Row]
     val getter = summon[Getter[
       Product.id,
@@ -34,6 +30,23 @@ class OrderOntologySpec extends BaseSpec:
     assert(row.get(Product.id) == 1)
     assert(row.project(Product.priceSchema) == BigInt(1) *: EmptyTuple)
     assert(row.project(Product.idNameSchema) == (1, "product name"))
+  }
+
+  test("named tuples") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val a                = row.toNamedTuple
+    assert(a.id == 1)
+    assert(a.name == "product name")
+
+    val aPlain: (Int, String, BigInt) = a.toTuple
+    val row2: Product.Row = RecordTupleValue[Product.TableSchema](aPlain)
+    assert(row == row2)
+
+    val row3: Product.Row = Product.fullSchema.fromNamedTuple(a)
+    assert(row == row3)
+
+    val row4: Product.Row = RecordTupleValue.fromNamedTuple[Product.TableSchema](a)
+    assert(row == row4)
   }
 
   test("nested get value") {

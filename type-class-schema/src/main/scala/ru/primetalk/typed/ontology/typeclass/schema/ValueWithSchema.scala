@@ -7,7 +7,7 @@ opaque type ValueWithSchema[Schema, +Value] >: Value = Value
 
 object ValueWithSchema:
 
-  private class IdentityConversion[A] extends Conversion[A, A]:
+  class IdentityConversion[A] extends Conversion[A, A]:
     def apply(x: A): A = x
 
   inline given valueToValueWithSchema[Schema, Value](using ev: SchemaValueType[Schema, Value]): Conversion[Value, ValueWithSchema[Schema, Value]] = 
