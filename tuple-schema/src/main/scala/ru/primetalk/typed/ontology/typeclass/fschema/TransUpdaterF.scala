@@ -1,12 +1,10 @@
 package ru.primetalk.typed.ontology.typeclass.fschema
 
-import scala.language.experimental.namedTuples
 import RecordTupleValueF.Prepend
 import ru.primetalk.typed.ontology.typeclass.schema.{RecordValueType, SchemaValueType}
 
-import scala.language.experimental.namedTuples
-
-trait TransUpdaterF[F[+_], Change, ChangeV <: Tuple, Dest, DestV] extends (Tuple.Map[ChangeV, F] => DestV => F[DestV]):
+trait TransUpdaterF[F[+_], Change, ChangeV <: Tuple, Dest, DestV]
+    extends (Tuple.Map[ChangeV, F] => DestV => F[DestV]):
   def apply(changeV: Tuple.Map[ChangeV, F]): DestV => F[DestV]
 
 // trait TransUpdaterFLowPriority2:
@@ -26,7 +24,6 @@ trait TransUpdaterF[F[+_], Change, ChangeV <: Tuple, Dest, DestV] extends (Tuple
 //           case None => headDest
 //         ) *: transUpdaterF(v)(tailDest)
 //     }
-
 
 // end TransUpdaterFLowPriority2
 

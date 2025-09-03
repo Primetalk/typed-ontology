@@ -1,6 +1,5 @@
 package ru.primetalk.typed.ontology.typeclass.tethys
 
-import scala.language.experimental.namedTuples
 import ru.primetalk.typed.ontology.typeclass.schema.{
   Column,
   RecordSchema,

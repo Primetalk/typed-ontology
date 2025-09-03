@@ -1,5 +1,5 @@
-val scala3Version = "3.6.4"
-val mainVersion   = "0.2.8"
+val scala3Version = "3.7.2"
+val mainVersion   = "0.3.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -161,13 +161,12 @@ lazy val ontologyQuill = project
   )
 
 lazy val `tuple-schema` = project
-  .in(file("type-class-schema"))
+  .in(file("tuple-schema"))
   .settings(
-    name           := "type-class-schema",
+    name           := "tuple-schema",
     publish / skip := true,
     scalacOptions ++= Seq(
-      "experimental",
-      "language:experimental.namedTuples"
+      "experimental"
     )
   )
   .dependsOn()
@@ -181,8 +180,7 @@ lazy val `tuple-schema-tethys` = project
     name           := "tuple-schema-tethys",
     publish / skip := true,
     scalacOptions ++= Seq(
-      "experimental",
-      "language:experimental.namedTuples"
+      "experimental"
     ),
     libraryDependencies ++= Seq(
       "com.tethys-json" %% "tethys-core" % tethysVersion,

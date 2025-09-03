@@ -4,7 +4,6 @@ import _root_.tethys.{given, *}
 import _root_.tethys.jackson.{given, *}
 
 import ru.primetalk.typed.ontology.typeclass.schema.{RuntimeNames, ColumnName, ValueWithSchema}
-import scala.language.experimental.namedTuples
 import _root_.tethys.{JsonReader, JsonWriter}
 
 class TupleJsonSupportSpec extends BaseSpec:

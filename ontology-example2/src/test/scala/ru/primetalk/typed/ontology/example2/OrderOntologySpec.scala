@@ -1,7 +1,5 @@
 package ru.primetalk.typed.ontology.example2
 
-import scala.language.experimental.namedTuples
-
 import ru.primetalk.typed.ontology.typeclass.schema.{
   Getter,
   Projector,
@@ -19,7 +17,7 @@ class OrderOntologySpec extends BaseSpec:
 
   test("get value") {
     val row: Product.Row = (1, "product name", BigInt(1))
-    val ev1 = summon[(Int, String, BigInt) <:< Product.Row]
+    val ev1              = summon[(Int, String, BigInt) <:< Product.Row]
     val getter = summon[Getter[
       Product.id,
       Int,
@@ -39,7 +37,7 @@ class OrderOntologySpec extends BaseSpec:
     assert(a.name == "product name")
 
     val aPlain: (Int, String, BigInt) = a.toTuple
-    val row2: Product.Row = RecordTupleValue[Product.TableSchema](aPlain)
+    val row2: Product.Row             = RecordTupleValue[Product.TableSchema](aPlain)
     assert(row == row2)
 
     val row3: Product.Row = Product.fullSchema.fromNamedTuple(a)
@@ -77,10 +75,10 @@ class OrderOntologySpec extends BaseSpec:
     assert(rn.names == List("name", "address"))
   }
 
-  test("map from/to case class"){
+  test("map from/to case class") {
     val row: Product.Row = (1, "product name", BigInt(1))
     case class MyProduct1(id: Int, name: String, price: BigInt)
-    val p1 = MyProduct1.apply.tupled(row.toTuple)
+    val p1             = MyProduct1.apply.tupled(row.toTuple)
     val p2: MyProduct1 = row.as
     assert(p1 == p2)
     val row2 = p1.asRecord[Product.TableSchema]
