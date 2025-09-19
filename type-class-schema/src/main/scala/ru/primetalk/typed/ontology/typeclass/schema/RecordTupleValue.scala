@@ -56,12 +56,12 @@ object RecordTupleValue:
     def unapply[H, HV, R <: Tuple, V <: Tuple](r: RecordTupleValue[H *: R, HV *: V]): (HV, RecordTupleValue[R, V]) =
       (r.toTuple.head, r.toTuple.tail)
 
-  inline given dropGetter[OtherColumn, OtherColumnValue, Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple](using getter: Getter[Column, ColumnValue, RecordTupleValue[Schema, SchemaValue]]): Getter[Column, ColumnValue, RecordTupleValue[OtherColumn *: Schema, OtherColumnValue *: SchemaValue]] = {
-    case Prepend(_, tail) =>
-      getter(tail)
-  }
-
-  inline given headGetter[Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple]: Getter[Column, ColumnValue, RecordTupleValue[Column *: Schema, ColumnValue *: SchemaValue]] = {
-    case Prepend(head, _) =>
-      head
-  }
+//  inline given dropGetter[OtherColumn, OtherColumnValue, Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple](using getter: Getter[Column, ColumnValue, RecordTupleValue[Schema, SchemaValue]]): Getter[Column, ColumnValue, RecordTupleValue[OtherColumn *: Schema, OtherColumnValue *: SchemaValue]] = {
+//    case Prepend(_, tail) =>
+//      getter(tail)
+//  }
+//
+//  inline given headGetter[Column, ColumnValue, Schema <: Tuple, SchemaValue <: Tuple]: Getter[Column, ColumnValue, RecordTupleValue[Column *: Schema, ColumnValue *: SchemaValue]] = {
+//    case Prepend(head, _) =>
+//      head
+//  }

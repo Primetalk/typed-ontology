@@ -1,18 +1,12 @@
 package ru.primetalk.typed.ontology.example2
 
 import scala.language.experimental.namedTuples
-
-import ru.primetalk.typed.ontology.typeclass.schema.{
-  Getter,
-  Projector,
-  RecordTupleValue,
-  SchemaValueType
-}
+import ru.primetalk.typed.ontology.typeclass.schema.{Getter, Projector, RecordRepr, RecordTupleValue, RuntimeNames, SchemaValueType, getter2, recordTupleValueRepr}
 import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.FromDSL
-import ru.primetalk.typed.ontology.typeclass.schema.RuntimeNames
+
 import scala.runtime.Tuples
 
 class OrderOntologySpec extends BaseSpec:
@@ -24,11 +18,33 @@ class OrderOntologySpec extends BaseSpec:
     assert(a.id == 1)
     assert(a.name == "product name")
     val ev1 = summon[(Int, String, BigInt) <:< Product.Row]
-    val getter = summon[Getter[
-      Product.id,
-      Int,
-      RecordTupleValue[Product.TableSchema, Int *: String *: BigInt *: EmptyTuple]
-    ]]
+
+    val ev2 = summon[
+      Tuple.Contains[
+       ru.primetalk.typed.ontology.example2.Product.id *:
+         ru.primetalk.typed.ontology.example2.Product.name *:
+       ru.primetalk.typed.ontology.example2.Product.price *: EmptyTuple,
+     ru.primetalk.typed.ontology.example2.Product.id] =:= true
+    ]
+
+    val recordRepr = summon[RecordRepr[
+      Product.TableSchema,
+      Int *: String *: BigInt *: EmptyTuple,
+      RecordTupleValue[Product.TableSchema, Int *: String *: BigInt *: EmptyTuple]]
+    ]
+
+    val svt4 = summon[SchemaValueType[Product.id, Int]](using svtForColumn)
+
+    val ev = summon[Tuple.Contains[Product.TableSchema, Product.id] =:= true]
+//    val svt2 = summon[SchemaValueType[Product.TableSchema, Int *: String *: BigInt *: EmptyTuple]](
+//      using Product.svt
+//    )
+
+//    val getter = summon[Getter[
+//      Product.id,
+//      Int,
+//      RecordTupleValue[Product.TableSchema, Int *: String *: BigInt *: EmptyTuple]
+//    ]] // (using getter2(using recordRepr, ev, Product.svt, svt4))
     val svt1 = summon[SchemaValueType[Product.id, Int]]
     val svt  = SchemaValueType.Aux[Product.id]
     assert(row.get(Product.id) == 1)

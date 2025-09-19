@@ -25,9 +25,9 @@ ThisBuild / homepage := Some(url("https://github.com/Primetalk/typed-ontology"))
 ThisBuild / pomIncludeRepository := { _ => false }
 ThisBuild / publishTo := {
   val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) 
+  if (isSnapshot.value)
     Some("snapshots" at nexus + "content/repositories/snapshots")
-  else 
+  else
     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
 ThisBuild / publishMavenStyle := true
@@ -35,4 +35,3 @@ ThisBuild / publishMavenStyle := true
 pgpSecretRing := pgpPublicRing.value
 
 usePgpKeyHex("9A3032D0")
-
