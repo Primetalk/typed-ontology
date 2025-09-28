@@ -3,6 +3,7 @@ package ru.primetalk.typed.ontology.typeclass.schema
 import scala.annotation.{implicitNotFound, targetName}
 import scala.NamedTuple.*
 import scala.NamedTupleDecomposition.*
+import scala.compiletime.summonInline
 
 /** Type-level annotation of a Tuple with it's RecordSchema. Elements are connected via Column[T],
   * SchemaValueType[C].
@@ -54,6 +55,7 @@ object RecordTupleValue:
       RecordTupleValue[R](t.toTuple)
 
   extension [R <: Tuple, V <: Tuple](v: RecordTupleValue[R, V])
+
     inline def toTuple: V = v.asInstanceOf[V]
 
     inline def toNamedTuple[Names <: Tuple](using
@@ -64,9 +66,14 @@ object RecordTupleValue:
     inline def prepend[H, HV](vh: ValueWithSchema[H, HV]): RecordTupleValue[H *: R, HV *: V] =
       vh.value *: v.toTuple
 
-    inline def get[Column, ColumnValue](column: Column)(using
-        svt: SchemaValueType[Column, ColumnValue]
-    )(using getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ColumnValue =
+    inline def get[Column](column: Column)[ColumnValue](using
+        svt: SchemaValueType[Column, ColumnValue],
+        getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ColumnValue =
+      getter(v).value
+
+    transparent inline def apply[Column]()[ColumnValue](using
+        svt: SchemaValueType[Column, ColumnValue],
+        getter: Getter[Column, ColumnValue, RecordTupleValue[R, V]]): ColumnValue =
       getter(v).value
 
     inline def project[Dest <: Tuple, DestV <: Tuple](dest: Dest)(using
@@ -76,6 +83,9 @@ object RecordTupleValue:
 
     inline def as[P <: Product](using m: scala.deriving.Mirror.ProductOf[P]): P =
       m.fromProduct(v.toTuple)
+
+    inline def toSelectable[Names <: Tuple](using columnsNames: ColumnsNames[R, Names]): SelectableRTV[R, V, Names] = 
+      SelectableRTV[R, V, Names](v)
 
   extension [V <: Tuple](v: V)
     inline def asRecord[S <: Tuple](using
@@ -118,3 +128,37 @@ object RecordTupleValue:
   ] = { case Prepend(head, _) =>
     head
   }
+
+  /**
+    * Find a corresponding type in the target tuple using index tuple as a lookup.
+    */
+  type CorrespondingType[Index <: Tuple, IndexValue, Target <: Tuple] =
+    Index match
+      case IndexValue *: tail => 
+        Target match 
+          case head *: _ => head
+          case _ => Nothing
+      case _ *: tail =>
+        Target match
+          case _ *: ttail => CorrespondingType[tail, IndexValue, ttail]
+          case _ => Nothing
+      case _ =>
+        Nothing 
+
+  class SelectableRTV[R <: Tuple, V <: Tuple, Names <: Tuple](
+    val record: RecordTupleValue[R, V])(using columnsNames: ColumnsNames[R, Names]) 
+    extends scala.Selectable:
+
+    type Fields = NamedTuple[Names, V]
+    
+    inline def selectDynamic(name: String): Any = 
+      type Column = CorrespondingType[Names, name.type, R]
+      type ColumnValue = CorrespondingType[Names, name.type, V]
+      val getter = summonInline[Getter[Column, ColumnValue, RecordTupleValue[R, V]]]
+      getter(record).value
+
+  inline given [R <: Tuple, V <: Tuple, Names <: Tuple](using
+        columnsNames: ColumnsNames[R, Names]
+    ) : Conversion[RecordTupleValue[R, V], Selectable] with
+    def apply(v: RecordTupleValue[R, V]): Selectable = 
+      new SelectableRTV[R, V, Names](v)

@@ -87,3 +87,22 @@ class OrderOntologySpec extends BaseSpec:
     val row3 = MyProduct1(1, "product name", 1).asRecord[Product.TableSchema]
     assert(row3 == row)
   }
+
+  test("access to fields using get") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    assert(1 == row.get(Product.id))
+  }
+
+  test("access to fields by type of column") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    assert(1 == row[Product.id]())
+  }
+
+  test("direct usage of field names") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val rowS             = row.toSelectable
+    val id               = rowS.id
+    assert(id == 1)
+    val n = rowS.name
+    assert(n == "product name")
+  }

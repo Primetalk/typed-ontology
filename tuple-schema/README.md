@@ -42,7 +42,7 @@ We'd like to support the following operations:
 
 ## Case class compatibility
 
-It's possible to convert an existing case class with compatible fields to Record:
+It's possible to convert an existing case class with compatible fields to Record and backwards:
 ```scala
 case class MyProduct1(id: Int, name: String, price: BigInt)
 val p = MyProduct1(1, "product name", 1)
@@ -76,4 +76,25 @@ Names are not checked for equality in this case. To check names for equality, on
 
     val row4: Product.Row = RecordTupleValue.fromNamedTuple[Product.TableSchema](a)
     assert(row == row4)
+```
+
+## Access fields by column type
+
+It's possible to access field values using column type name:
+```scala
+    val row: Product.Row = (1, "product name", BigInt(1))
+    row[Product.id]() == 1
+```
+
+## Direct usage of field names
+
+Thanks to support of NamedTypes in Selectable, we can use field names directly on the row itself:
+
+```scala
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val rowS             = row.toSelectable
+    val id               = rowS.id
+    assert(id == 1)
+    val n = rowS.name
+    assert(n == "product name")
 ```
