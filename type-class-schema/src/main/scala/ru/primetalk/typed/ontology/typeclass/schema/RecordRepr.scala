@@ -2,12 +2,10 @@ package ru.primetalk.typed.ontology.typeclass.schema
 
 import scala.language.experimental.namedTuples
 
-trait RecordRepr[S <: Tuple, V <: Tuple, -Repr]:
-  inline def get[HS, HV](
-                          using svt: SchemaValueType[HS, HV],
-                          ev: Tuple.Contains[S, HS] =:= true,
-                          svt2: SchemaValueType[S, RecordTupleValue[S, V]]
-                        ): Repr => HV
+trait RecordRepr[Repr[_]]:
+  inline def getter[HS, HV, V: Repr]: Getter[HS, HV, V]
+  
+  inline def projector
 
   inline def getOpt[HS, HV](
                           using svt: SchemaValueType[HS, HV],
