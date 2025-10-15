@@ -1,9 +1,7 @@
 package ru.primetalk.typed.ontology.typeclass.fschema
 
-import scala.language.experimental.namedTuples
-
-/** Transformer from Source schema to Dest schema exists only if such conversion is possible. In this
-  * case it allows to perform the conversion of values.
+/** Transformer from Source schema to Dest schema exists only if such conversion is possible. In
+  * this case it allows to perform the conversion of values.
   */
 @FunctionalInterface
 trait TransformerF[F[+_], Source, -SourceV, Dest, +DestV] extends Function1[SourceV, F[DestV]]:
@@ -20,7 +18,6 @@ trait ProjectionTransformerLowPriority2:
 //    proj: Transformer[Source, RecordTupleValue[Source, SV], Dest, RecordTupleValue[Dest, DV]]
 //  ): Transformer[Source, RecordTupleValue[Source, SV], H *: Dest, RecordTupleValue[H *: Dest, HV *: DV]] =
 //    v => proj(v).prepend(getter(v))
-
 
 end ProjectionTransformerLowPriority2
 
@@ -56,7 +53,7 @@ object Transformer extends ProjectionTransformerLowPriority:
 //      svt: RecordValueType[S, V]
 //  ): Transformer[S, RecordTupleValue[S, V], S, RecordTupleValue[S, V]] =
 //    identity
-//    
+//
 //  given identityReplacerTransformer[S <: Tuple, V <: Tuple, From, To, FromV](using
 //    svt: RecordValueType[S, V],
 //    fsvt: SchemaValueType[From, FromV],

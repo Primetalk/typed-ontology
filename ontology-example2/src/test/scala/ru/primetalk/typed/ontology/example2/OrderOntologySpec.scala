@@ -1,6 +1,6 @@
 package ru.primetalk.typed.ontology.example2
 
-import scala.language.experimental.namedTuples
+
 import ru.primetalk.typed.ontology.typeclass.schema.{Getter, Projector, RecordRepr, RecordTupleValue, RuntimeNames, SchemaValueType, getter2, recordTupleValueRepr}
 import ru.primetalk.typed.ontology.typeclass.schema.RecordTupleValue.{*, given}
 import ru.primetalk.typed.ontology.typeclass.table.TableColumn
@@ -12,12 +12,8 @@ import scala.runtime.Tuples
 class OrderOntologySpec extends BaseSpec:
 
   test("get value") {
-
     val row: Product.Row = (1, "product name", BigInt(1))
-    val a                = row.toNamedTuple
-    assert(a.id == 1)
-    assert(a.name == "product name")
-    val ev1 = summon[(Int, String, BigInt) <:< Product.Row]
+    val ev1              = summon[(Int, String, BigInt) <:< Product.Row]
 
     val ev2 = summon[
       Tuple.Contains[
@@ -52,6 +48,23 @@ class OrderOntologySpec extends BaseSpec:
     assert(row.project(Product.idNameSchema) == (1, "product name"))
   }
 
+  test("named tuples") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val a                = row.toNamedTuple
+    assert(a.id == 1)
+    assert(a.name == "product name")
+
+    val aPlain: (Int, String, BigInt) = a.toTuple
+    val row2: Product.Row             = RecordTupleValue[Product.TableSchema](aPlain)
+    assert(row == row2)
+
+    val row3: Product.Row = Product.fullSchema.fromNamedTuple(a)
+    assert(row == row3)
+
+    val row4: Product.Row = RecordTupleValue.fromNamedTuple[Product.TableSchema](a)
+    assert(row == row4)
+  }
+
   test("nested get value") {
     val p1: Person.Row  = ("name", ("street", 1))
     val a1              = p1.get(Person.address)
@@ -80,10 +93,10 @@ class OrderOntologySpec extends BaseSpec:
     assert(rn.names == List("name", "address"))
   }
 
-  test("map from/to case class"){
+  test("map from/to case class") {
     val row: Product.Row = (1, "product name", BigInt(1))
     case class MyProduct1(id: Int, name: String, price: BigInt)
-    val p1 = MyProduct1.apply.tupled(row.toTuple)
+    val p1             = MyProduct1.apply.tupled(row.toTuple)
     val p2: MyProduct1 = row.as
     assert(p1 == p2)
     val row2 = p1.asRecord[Product.TableSchema]
@@ -91,4 +104,23 @@ class OrderOntologySpec extends BaseSpec:
     assert(row2 == row)
     val row3 = MyProduct1(1, "product name", 1).asRecord[Product.TableSchema]
     assert(row3 == row)
+  }
+
+  test("access to fields using get") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    assert(1 == row.get(Product.id))
+  }
+
+  test("access to fields by type of column") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    assert(1 == row[Product.id]())
+  }
+
+  test("direct usage of field names") {
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val rowS             = row.toSelectable
+    val id               = rowS.id
+    assert(id == 1)
+    val n = rowS.name
+    assert(n == "product name")
   }

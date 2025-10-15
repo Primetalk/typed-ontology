@@ -42,7 +42,7 @@ We'd like to support the following operations:
 
 ## Case class compatibility
 
-It's possible to convert an existing case class with compatible fields to Record:
+It's possible to convert an existing case class with compatible fields to Record and backwards:
 ```scala
 case class MyProduct1(id: Int, name: String, price: BigInt)
 val p = MyProduct1(1, "product name", 1)
@@ -52,3 +52,49 @@ assert(p == p2)
 ```
 These inline functions use `Mirror` to perform compile time conversion.
 
+## NamedTuple compatibility
+
+A row has `.toNamedTuple` conversion function (in case there are `Names` in scope):
+
+```scala
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val a                = row.toNamedTuple
+    assert(a.id == 1)
+    assert(a.name == "product name")
+```
+As `NamedTuple` is also a Tuple, it could very well be converted to a compatible Row:
+```scala
+    val aPlain: (Int, String, BigInt) = a.toTuple
+    val row2: Product.Row = RecordTupleValue[Product.TableSchema](aPlain)
+    assert(row == row2)
+```
+
+Names are not checked for equality in this case. To check names for equality, one might use `.fromNamedTuple`:
+```scala
+    val row3: Product.Row = Product.fullSchema.fromNamedTuple(a)
+    assert(row == row3)
+
+    val row4: Product.Row = RecordTupleValue.fromNamedTuple[Product.TableSchema](a)
+    assert(row == row4)
+```
+
+## Access fields by column type
+
+It's possible to access field values using column type name:
+```scala
+    val row: Product.Row = (1, "product name", BigInt(1))
+    row[Product.id]() == 1
+```
+
+## Direct usage of field names
+
+Thanks to support of NamedTypes in Selectable, we can use field names directly on the row itself:
+
+```scala
+    val row: Product.Row = (1, "product name", BigInt(1))
+    val rowS             = row.toSelectable
+    val id               = rowS.id
+    assert(id == 1)
+    val n = rowS.name
+    assert(n == "product name")
+```

@@ -30,9 +30,9 @@ A developer that develops an application can choose the way of how to represent 
 
 ## Current model vs legacy models
 
-This repository contains a few attempts to produce an ontology. The most recent approach is based on tuples and is being developed in the project `type-class-schema`. Usage examples could be found in `ontology-example2`.
+This repository contains a few attempts to produce an ontology. The most recent approach is based on tuples and is being developed in the project `tuple-schema`. Usage examples could be found in `ontology-example2`.
 
-The current approach to represent schemas is defined in `type-class-schema` module. See [README.md](type-class-schema/README.md).
+The current approach to represent schemas is defined in `tuple-schema` module. See [README.md](tuple-schema/README.md).
 
 # Legacy approach
 
