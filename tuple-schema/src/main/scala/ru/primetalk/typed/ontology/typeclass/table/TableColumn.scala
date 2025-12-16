@@ -2,7 +2,8 @@ package ru.primetalk.typed.ontology.typeclass.table
 
 import ru.primetalk.typed.ontology.typeclass.schema.*
 
-class TableColumn[Name <: String & Singleton, V]
+class TableColumn[Name <: String & Singleton, V]:
+  type Value = V
 
 object TableColumn:
 

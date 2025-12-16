@@ -189,3 +189,21 @@ lazy val `tuple-schema-tethys` = project
   )
   .dependsOn(`tuple-schema`)
   .settings(commonSettings*)
+
+lazy val `event-sourcing` = project
+  .in(file("event-sourcing"))
+  .settings(
+    name           := "event-sourcing",
+    publish / skip := true,
+  )
+  .dependsOn(`tuple-schema`)
+  .settings(commonSettings*)
+
+lazy val `event-sourcing-example` = project
+  .in(file("event-sourcing-example"))
+  .settings(
+    name           := "event-sourcing-example",
+    publish / skip := true,
+  )
+  .dependsOn(`event-sourcing`)
+  .settings(commonSettings*)

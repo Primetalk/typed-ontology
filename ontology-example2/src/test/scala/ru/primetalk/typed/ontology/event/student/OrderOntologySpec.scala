@@ -1,4 +1,4 @@
-package ru.primetalk.typed.ontology.example2
+package ru.primetalk.typed.ontology.event.student
 
 import ru.primetalk.typed.ontology.typeclass.schema.{
   Getter,

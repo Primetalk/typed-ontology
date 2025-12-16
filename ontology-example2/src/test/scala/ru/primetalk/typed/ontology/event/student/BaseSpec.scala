@@ -1,4 +1,4 @@
-package ru.primetalk.typed.ontology.example2
+package ru.primetalk.typed.ontology.event.student
 
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.funspec.{AnyFunSpec, AnyFunSpecLike}
